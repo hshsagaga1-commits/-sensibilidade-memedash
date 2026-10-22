@@ -1,4 +1,4 @@
--- MEMEDASH DIAGNOSTIC v1.2 - visible on-screen, read-only
+-- MEMEDASH DIAGNOSTIC v1.3 - report viewer
 local ok, err = pcall(function()
     local Players = game:GetService("Players")
     local UIS = game:GetService("UserInputService")
@@ -30,6 +30,41 @@ local ok, err = pcall(function()
     panel.Parent = gui
 
     local lines = {}
+    local copyButton = Instance.new("TextButton")
+    copyButton.Name = "CopyReportButton"
+    copyButton.Size = UDim2.new(0.42, 0, 0, 34)
+    copyButton.Position = UDim2.new(0.52, 0, 0.08, 226)
+    copyButton.BackgroundColor3 = Color3.fromRGB(45, 125, 220)
+    copyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    copyButton.Text = "VER / COPIAR RELATÓRIO"
+    copyButton.TextSize = 12
+    copyButton.Font = Enum.Font.GothamBold
+    copyButton.Parent = gui
+
+    local reportBox = Instance.new("TextBox")
+    reportBox.Name = "FullReport"
+    reportBox.Size = UDim2.new(0.9, 0, 0.55, 0)
+    reportBox.Position = UDim2.new(0.05, 0, 0.25, 0)
+    reportBox.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    reportBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    reportBox.TextSize = 12
+    reportBox.Font = Enum.Font.Code
+    reportBox.TextXAlignment = Enum.TextXAlignment.Left
+    reportBox.TextYAlignment = Enum.TextYAlignment.Top
+    reportBox.TextWrapped = false
+    reportBox.TextEditable = true
+    reportBox.ClearTextOnFocus = false
+    reportBox.MultiLine = true
+    reportBox.Visible = false
+    reportBox.Text = ""
+    reportBox.Parent = gui
+
+    copyButton.Activated:Connect(function()
+        reportBox.Text = table.concat(lines, "\\n")
+        reportBox.Visible = not reportBox.Visible
+        copyButton.Text = reportBox.Visible and "RELATÓRIO ABERTO — SELECIONE E COPIE" or "VER / COPIAR RELATÓRIO"
+    end)
+
     local function log(s)
         lines[#lines + 1] = tostring(s)
         while #lines > 12 do table.remove(lines, 1) end
