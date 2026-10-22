@@ -194,13 +194,16 @@ copyBtn.Activated:Connect(function()
     end
 end)
 closeBtn.Activated:Connect(function()
-    running = false
-    for _, c in ipairs(connections) do pcall(function() c:Disconnect() end) end
-    for _, c in ipairs({}) do pcall(function() c:Disconnect() end) end
-    pcall(function() gui:Destroy() end)
+    if type(ENV.__MemeDashCameraX9Cleanup) == "function" then
+        ENV.__MemeDashCameraX9Cleanup()
+    else
+        running = false
+        pcall(function() gui:Destroy() end)
+    end
 end)
 
 connections[#connections+1] = UIS.InputChanged:Connect(function(input)
+    if not running then return end
     local key = input.UserInputType.Name
     inputCounts[key] = (inputCounts[key] or 0) + 1
     local delta = input.Delta
@@ -209,12 +212,12 @@ connections[#connections+1] = UIS.InputChanged:Connect(function(input)
     end
 end)
 connections[#connections+1] = UIS.TouchMoved:Connect(function(touch, processed)
+    if not running then return end
     local key = "TouchMoved"
     inputCounts[key] = (inputCounts[key] or 0) + 1
-    local p = touch.Position
-    local prev = touch.Delta
-    if prev and #inputDeltas < 5000 then
-        table.insert(inputDeltas, {x=prev.X or 0, y=prev.Y or 0})
+    local delta = touch.Delta
+    if delta and #inputDeltas < 5000 then
+        table.insert(inputDeltas, {x=delta.X or 0, y=delta.Y or 0})
     end
 end)
 ENV.__MemeDashCameraX9Cleanup = function()
