@@ -57,7 +57,11 @@ local function cleanup()
     closed = true
     for _, c in ipairs(connections) do pcall(function() c:Disconnect() end) end
     table.clear(connections)
-    if bound then pcall(function() RunService:UnbindFromRenderStep(renderName) end); bound = false end
+    if bound then
+        pcall(function() RunService:UnbindFromRenderStep(renderName) end)
+        pcall(function() RunService:UnbindFromRenderStep(renderName .. "_Pre") end)
+        bound = false
+    end
     if gui then pcall(function() gui:Destroy() end) end
     ENV.MemeDashCameraSensitivity = nil
     ENV.__MemeDashCameraSensitivityCleanup = nil
@@ -239,77 +243,107 @@ connections[#connections+1] = UserInputService.InputEnded:Connect(function(input
     end
 end)
 
--- Camera Scriptable sensitivity fix.
--- Usa a última rotação ajustada como referência para evitar feedback.
+-- Camera Scriptable sensitivity: capture before the game's camera update,
+-- then scale that frame's delta after the game has applied it.
+local cameraBefore = nil
+local function getYaw(cf)
+    local _, yaw, _ = cf:ToOrientation()
+    return yaw
+end
+local preName = renderName .. "_Pre"
 
-local camera = workspace.CurrentCamera
-local lastAdjustedCFrame = camera and camera.CFrame
-
-local bindOk = pcall(function()
-    RunService:BindToRenderStep(
-        renderName,
-        Enum.RenderPriority.Camera.Value + 1,
-        function()
-            if closed then return end
-
-            local cam = workspace.CurrentCamera
-            if not cam then
-                lastAdjustedCFrame = nil
-                hookStatus = "aguardando camera"
-                refresh()
-                return
-            end
-
-            local current = cam.CFrame
-
-            if cam.CameraType ~= Enum.CameraType.Scriptable then
-                lastAdjustedCFrame = current
-                hookStatus = "camera nao Scriptable"
-                refresh()
-                return
-            end
-
-            if not lastAdjustedCFrame then
-                lastAdjustedCFrame = current
-                hookStatus = "sensibilidade Scriptable ativa"
-                refresh()
-                return
-            end
-
-            if not enabled then
-                lastAdjustedCFrame = current
-                hookStatus = "camera: sensibilidade OFF"
-                refresh()
-                return
-            end
-
-            local baseRotation = lastAdjustedCFrame.Rotation
-            local currentRotation = current.Rotation
-            local delta = baseRotation:ToObjectSpace(currentRotation)
-            local axis, angle = delta:ToAxisAngle()
-
-            if angle > math.rad(45) then
-                lastAdjustedCFrame = current
-                hookStatus = "sensibilidade Scriptable ativa"
-                refresh()
-                return
-            end
-
-            local outputRotation = currentRotation
-            if angle > 0.00001 then
-                outputRotation = baseRotation * CFrame.fromAxisAngle(axis, angle * multiplier)
-            end
-
-            local output = CFrame.new(current.Position) * outputRotation
-            cam.CFrame = output
-            lastAdjustedCFrame = output
-
-            hookStatus = "sensibilidade Scriptable ativa"
-            refresh()
+local preOk = pcall(function()
+    RunService:BindToRenderStep(preName, Enum.RenderPriority.Camera.Value - 1, function()
+        if closed then return end
+        local cam = workspace.CurrentCamera
+        if not cam or cam.CameraType ~= Enum.CameraType.Scriptable then
+            cameraBefore = nil
+            return
         end
-    )
-    bound = true
+        cameraBefore = cam.CFrame
+    end)
 end)
+
+local postOk = pcall(function()
+    RunService:BindToRenderStep(renderName, Enum.RenderPriority.Camera.Value + 1, function()
+        if closed then return end
+        local cam = workspace.CurrentCamera
+        if not cam then
+            cameraBefore = nil
+            hookStatus = "aguardando camera"
+            refresh()
+            return
+        end
+
+        local current = cam.CFrame
+        if cam.CameraType ~= Enum.CameraType.Scriptable then
+            cameraBefore = current
+            hookStatus = "camera nao Scriptable"
+            refresh()
+            return
+        end
+
+        if not enabled then
+            cameraBefore = current
+            hookStatus = "camera: sensibilidade OFF"
+            refresh()
+            return
+        end
+
+        if not cameraBefore then
+            cameraBefore = current
+            hookStatus = "sensibilidade ativa; calibrando"
+            refresh()
+            return
+        end
+
+        local delta = cameraBefore.Rotation:ToObjectSpace(current.Rotation)
+        local axis, angle = delta:ToAxisAngle()
+
+        -- Skip abrupt camera resets rather than amplifying them.
+        if angle > math.rad(90) then
+            cameraBefore = current
+            hookStatus = "salto de camera ignorado"
+            refresh()
+            return
+        end
+
+        local outputRotation = current.Rotation
+        if angle > 0.00001 then
+            outputRotation = cameraBefore.Rotation * CFrame.fromAxisAngle(axis, angle * multiplier)
+        end
+        local output = CFrame.new(current.Position) * outputRotation
+
+        -- X9 showed root yaw tracks camera yaw, so correct the root by the
+        -- same yaw difference to keep the body aligned with the adjusted camera.
+        local rawYaw = getYaw(current)
+        local adjustedYaw = getYaw(output)
+        local yawCorrection = math.atan2(
+            math.sin(adjustedYaw - rawYaw),
+            math.cos(adjustedYaw - rawYaw)
+        )
+
+        cam.CFrame = output
+        local character = player.Character
+        local root = character and character:FindFirstChild("HumanoidRootPart")
+        if root and math.abs(yawCorrection) > 0.00001 then
+            root.CFrame = CFrame.new(root.Position)
+                * CFrame.Angles(0, yawCorrection, 0)
+                * root.CFrame.Rotation
+        end
+
+        cameraBefore = output
+        hookStatus = preOk and postOk and "sensibilidade Scriptable ativa" or "erro ao ligar captura"
+        refresh()
+    end)
+end)
+
+local bindOk = preOk and postOk
+bound = bindOk
+if not bindOk then
+    pcall(function() RunService:UnbindFromRenderStep(preName) end)
+    pcall(function() RunService:UnbindFromRenderStep(renderName) end)
+end
 
 if not bindOk then hookStatus = "erro ao iniciar sensibilidade Scriptable" end
 refresh()
