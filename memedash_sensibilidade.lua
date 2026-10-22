@@ -99,117 +99,166 @@ local function cleanup()
     ENV.__MemeDashCameraSensitivityCleanup = nil
 end
 
-local function button(parent, text, size, pos, color)
+local function makeButton(parent, text, size, pos, color)
     local b = Instance.new("TextButton")
-    b.Size, b.Position = size, pos
-    b.BackgroundColor3, b.BorderSizePixel = color, 0
-    b.Text, b.TextColor3 = text, Color3.new(1,1,1)
-    b.Font, b.TextSize = Enum.Font.GothamBold, 11
+    b.Size = size
+    b.Position = pos
+    b.BackgroundColor3 = color
+    b.BorderSizePixel = 0
+    b.Text = text
+    b.TextColor3 = Color3.new(1,1,1)
+    b.Font = Enum.Font.GothamMedium
+    b.TextSize = 12
     b.Parent = parent
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0,7)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0,8)
+    corner.Parent = b
     return b
 end
 
-local parent
-pcall(function() if type(gethui) == "function" then parent = gethui() end end)
-if not parent then parent = playerGui end
+-- Interface simples restaurada: título, valor, slider e botão.
+-- A lógica da sensibilidade continua separada no hook CameraInput.
 gui = Instance.new("ScreenGui")
-gui.Name, gui.ResetOnSpawn, gui.DisplayOrder = GUI_NAME, false, 1000000
+gui.Name = GUI_NAME
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = false
+gui.DisplayOrder = 1000000
 gui.Parent = playerGui
 
-local panel = Instance.new("Frame")
-panel.Name = "Panel"
-panel.Size = UDim2.fromOffset(265, 142)
-panel.Position = UDim2.new(0.5,-132,0.12,0)
-panel.BackgroundColor3, panel.BorderSizePixel = Color3.fromRGB(23,25,31), 0
-panel.Active, panel.Parent = true, gui
-Instance.new("UICorner", panel).CornerRadius = UDim.new(0,10)
+local frame = Instance.new("Frame")
+frame.Name = "Panel"
+frame.Size = UDim2.fromOffset(238,122)
+frame.Position = UDim2.new(0.5,-119,0.14,0)
+frame.BackgroundColor3 = Color3.fromRGB(24,24,27)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Parent = gui
+local frameCorner = Instance.new("UICorner")
+frameCorner.CornerRadius = UDim.new(0,10)
+frameCorner.Parent = frame
 
 local title = Instance.new("TextLabel")
 title.BackgroundTransparency = 1
-title.Position, title.Size = UDim2.fromOffset(10,5), UDim2.new(1,-48,0,22)
-title.Text, title.TextColor3 = "MEMEDASH • CAMERA INPUT", Color3.fromRGB(245,245,248)
-title.Font, title.TextSize, title.TextXAlignment = Enum.Font.GothamBold, 12, Enum.TextXAlignment.Left
-title.Parent = panel
-local close = button(panel,"X",UDim2.fromOffset(26,22),UDim2.new(1,-32,0,5),Color3.fromRGB(105,58,62))
-close.Activated:Connect(cleanup)
+title.Position = UDim2.fromOffset(10,5)
+title.Size = UDim2.new(1,-70,0,26)
+title.Text = "MemeDash Sensibilidade"
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.GothamSemibold
+title.TextSize = 13
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = frame
 
 valueLabel = Instance.new("TextLabel")
 valueLabel.BackgroundTransparency = 1
-valueLabel.Position, valueLabel.Size = UDim2.fromOffset(12,29), UDim2.new(1,-24,0,24)
-valueLabel.TextColor3, valueLabel.Font, valueLabel.TextSize = Color3.fromRGB(225,230,240), Enum.Font.GothamMedium, 11
-valueLabel.TextXAlignment = Enum.TextXAlignment.Left
-valueLabel.Parent = panel
-
--- Cria os controles principais ANTES do slider, para um erro visual não deixar só metade do painel.
-local toggle = button(panel,"CAMERA: ON",UDim2.new(1,-24,0,28),UDim2.fromOffset(12,98),Color3.fromRGB(42,126,82))
-toggleButton = toggle
-toggle.Activated:Connect(function()
-    enabled = not enabled
-    refresh()
-end)
+valueLabel.Position = UDim2.new(1,-62,0,5)
+valueLabel.Size = UDim2.fromOffset(52,26)
+valueLabel.TextColor3 = Color3.new(1,1,1)
+valueLabel.Font = Enum.Font.GothamMedium
+valueLabel.TextSize = 13
+valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+valueLabel.Parent = frame
 
 local bar = Instance.new("Frame")
 bar.Name = "Slider"
-bar.Position = UDim2.fromOffset(14,59)
-bar.Size = UDim2.new(1,-28,0,12)
-bar.BackgroundColor3 = Color3.fromRGB(68,72,82)
+bar.Position = UDim2.fromOffset(12,49)
+bar.Size = UDim2.new(1,-24,0,8)
+bar.BackgroundColor3 = Color3.fromRGB(72,72,78)
 bar.BorderSizePixel = 0
 bar.Active = true
-bar.ClipsDescendants = false
-bar.Parent = panel
+bar.Parent = frame
+local barCorner = Instance.new("UICorner")
+barCorner.CornerRadius = UDim.new(1,0)
+barCorner.Parent = bar
 
 fill = Instance.new("Frame")
 fill.Name = "Fill"
-fill.BackgroundColor3 = Color3.fromRGB(90,165,255)
+fill.BackgroundColor3 = Color3.fromRGB(235,235,240)
 fill.BorderSizePixel = 0
-fill.Size = UDim2.new((multiplier-MIN)/(MAX-MIN),0,1,0)
-fill.Position = UDim2.new(0,0,0,0)
-fill.ZIndex = bar.ZIndex + 1
+fill.Size = UDim2.new(0,0,1,0)
 fill.Parent = bar
+local fillCorner = Instance.new("UICorner")
+fillCorner.CornerRadius = UDim.new(1,0)
+fillCorner.Parent = fill
 
 knob = Instance.new("Frame")
 knob.Name = "Knob"
 knob.AnchorPoint = Vector2.new(0.5,0.5)
-knob.Position = UDim2.new((multiplier-MIN)/(MAX-MIN),0,0.5,0)
 knob.Size = UDim2.fromOffset(18,18)
-knob.BackgroundColor3 = Color3.fromRGB(250,250,252)
+knob.BackgroundColor3 = Color3.fromRGB(250,250,250)
 knob.BorderSizePixel = 0
-knob.ZIndex = fill.ZIndex + 1
 knob.Active = true
 knob.Parent = bar
+local knobCorner = Instance.new("UICorner")
+knobCorner.CornerRadius = UDim.new(1,0)
+knobCorner.Parent = knob
 
-pcall(function() Instance.new("UICorner", bar).CornerRadius = UDim.new(1,0) end)
-pcall(function() Instance.new("UICorner", fill).CornerRadius = UDim.new(1,0) end)
-pcall(function() Instance.new("UICorner", knob).CornerRadius = UDim.new(1,0) end)
+local minLabel = Instance.new("TextLabel")
+minLabel.BackgroundTransparency = 1
+minLabel.Position = UDim2.fromOffset(12,62)
+minLabel.Size = UDim2.fromOffset(40,16)
+minLabel.Text = "0.1x"
+minLabel.TextColor3 = Color3.fromRGB(160,160,168)
+minLabel.Font = Enum.Font.Gotham
+minLabel.TextSize = 10
+minLabel.TextXAlignment = Enum.TextXAlignment.Left
+minLabel.Parent = frame
 
-local sliding, slideInput = false, nil
-local function updateX(x)
+local maxLabel = Instance.new("TextLabel")
+maxLabel.BackgroundTransparency = 1
+maxLabel.Position = UDim2.new(1,-52,0,62)
+maxLabel.Size = UDim2.fromOffset(40,16)
+maxLabel.Text = "2.0x"
+maxLabel.TextColor3 = Color3.fromRGB(160,160,168)
+maxLabel.Font = Enum.Font.Gotham
+maxLabel.TextSize = 10
+maxLabel.TextXAlignment = Enum.TextXAlignment.Right
+maxLabel.Parent = frame
+
+toggleButton = makeButton(frame,"CAMERA: ON",UDim2.new(1,-24,0,28),UDim2.fromOffset(12,83),Color3.fromRGB(48,105,175))
+toggleButton.Activated:Connect(function()
+    enabled = not enabled
+    refresh()
+end)
+
+local function updateFromX(x)
     local width = bar.AbsoluteSize.X
     if width <= 0 then return end
-    setMultiplier(MIN + (MAX-MIN) * math.clamp((x-bar.AbsolutePosition.X)/width,0,1))
+    local alpha = math.clamp((x-bar.AbsolutePosition.X)/width,0,1)
+    setMultiplier(MIN+(MAX-MIN)*alpha)
     refresh()
 end
-connections[#connections+1] = bar.InputBegan:Connect(function(input)
+
+local sliding, slideInput = false, nil
+local dragging, dragInput, dragStart, dragPosition = false, nil, nil, nil
+local function beginSlide(input)
     if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
         sliding, slideInput = true, input
-        updateX(input.Position.X)
+        updateFromX(input.Position.X)
     end
-end)
-connections[#connections+1] = knob.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-        sliding, slideInput = true, input
-        updateX(input.Position.X)
+end
+connections[#connections+1] = bar.InputBegan:Connect(beginSlide)
+connections[#connections+1] = knob.InputBegan:Connect(beginSlide)
+connections[#connections+1] = frame.InputBegan:Connect(function(input)
+    if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1)
+        and input.Position.Y < bar.AbsolutePosition.Y-7 then
+        dragging, dragInput, dragStart, dragPosition = true, input, input.Position, frame.Position
     end
 end)
 connections[#connections+1] = UserInputService.InputChanged:Connect(function(input)
     if sliding and (input == slideInput or (slideInput and slideInput.UserInputType == Enum.UserInputType.MouseButton1 and input.UserInputType == Enum.UserInputType.MouseMovement)) then
-        updateX(input.Position.X)
+        updateFromX(input.Position.X)
+    end
+    if dragging and dragStart and dragPosition and (input == dragInput or (dragInput and dragInput.UserInputType == Enum.UserInputType.MouseButton1 and input.UserInputType == Enum.UserInputType.MouseMovement)) then
+        local delta = input.Position-dragStart
+        frame.Position = UDim2.new(dragPosition.X.Scale,dragPosition.X.Offset+delta.X,dragPosition.Y.Scale,dragPosition.Y.Offset+delta.Y)
     end
 end)
 connections[#connections+1] = UserInputService.InputEnded:Connect(function(input)
     if input == slideInput or (slideInput and slideInput.UserInputType == Enum.UserInputType.MouseButton1 and input.UserInputType == Enum.UserInputType.MouseButton1) then
         sliding, slideInput = false, nil
+    end
+    if input == dragInput or (dragInput and dragInput.UserInputType == Enum.UserInputType.MouseButton1 and input.UserInputType == Enum.UserInputType.MouseButton1) then
+        dragging, dragInput, dragStart, dragPosition = false, nil, nil, nil
     end
 end)
 
