@@ -209,7 +209,8 @@ local ok, err = pcall(function()
         local char = player.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
         local rootPart = char and char:FindFirstChild("HumanoidRootPart")
-        local insetTop, insetBottom = safe(function() return GuiService:GetGuiInset() end, Vector2.zero)
+        local insetTop, insetBottom = Vector2.zero, Vector2.zero
+        pcall(function() insetTop, insetBottom = GuiService:GetGuiInset() end)
         if section == "RESUMO" then
             table.insert(out, "MEMEDASH SCREEN X-RAY v2.0")
             table.insert(out, "Modo: observacao; nao altera controles nem sensibilidade.")
@@ -359,7 +360,7 @@ local ok, err = pcall(function()
         gui:Destroy()
     end)
 
-    local lastCamera = cam
+    local lastCamera = Workspace.CurrentCamera
     local lastCFrame = Workspace.CurrentCamera and Workspace.CurrentCamera.CFrame
     local sampleStart = os.clock()
     local sampleLast = 0
