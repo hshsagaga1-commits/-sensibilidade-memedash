@@ -1,4 +1,4 @@
--- MEMEDASH CAMERA SENSITIVITY v4.0
+-- MEMEDASH CAMERA SENSITIVITY v5.0
 -- Applies sensitivity to Scriptable camera rotation deltas only; does not change character movement.
 
 local Players = game:GetService("Players")
@@ -7,7 +7,7 @@ local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local ENV = (type(getgenv) == "function" and getgenv()) or _G
 
-local VERSION = "MemeDashScriptableCameraSensitivity-4.0"
+local VERSION = "MemeDashScriptableCameraSensitivity-5.0"
 local GUI_NAME = "MemeDashCameraSensitivityGui"
 local MIN, MAX, STEP = 0.1, 2.0, 0.1
 local player = Players.LocalPlayer
@@ -245,88 +245,103 @@ end)
 
 -- Camera Scriptable sensitivity: capture before the game's camera update,
 -- then scale that frame's delta after the game has applied it.
-local cameraBefore = nil
-local preName = renderName .. "_Pre"
-
-local preOk = pcall(function()
-    RunService:BindToRenderStep(preName, Enum.RenderPriority.Camera.Value - 1, function()
-        if closed then return end
-        local cam = workspace.CurrentCamera
-        if not cam or cam.CameraType ~= Enum.CameraType.Scriptable then
-            cameraBefore = nil
-            return
-        end
-        cameraBefore = cam.CFrame
-    end)
-end)
-
-local postOk = pcall(function()
-    RunService:BindToRenderStep(renderName, Enum.RenderPriority.Camera.Value + 1, function()
-        if closed then return end
-        local cam = workspace.CurrentCamera
-        if not cam then
-            cameraBefore = nil
-            hookStatus = "aguardando camera"
-            refresh()
-            return
-        end
-
-        local current = cam.CFrame
-        if cam.CameraType ~= Enum.CameraType.Scriptable then
-            cameraBefore = current
-            hookStatus = "camera nao Scriptable"
-            refresh()
-            return
-        end
-
-        if not enabled then
-            cameraBefore = current
-            hookStatus = "camera: sensibilidade OFF"
-            refresh()
-            return
-        end
-
-        if not cameraBefore then
-            cameraBefore = current
-            hookStatus = "sensibilidade ativa; calibrando"
-            refresh()
-            return
-        end
-
-        -- Scale only the camera's frame rotation delta. Do not rotate the
-        -- HumanoidRootPart: the game's own controller remains responsible for body alignment.
-        local delta = cameraBefore.Rotation:ToObjectSpace(current.Rotation)
-        local axis, angle = delta:ToAxisAngle()
-
-        -- Ignore large discontinuities caused by respawn/camera resets.
-        if angle > math.rad(90) then
-            cameraBefore = current
-            hookStatus = "reset de camera ignorado"
-            refresh()
-            return
-        end
-
-        local output = current
-        if angle > 0.00001 then
-            local scaledDelta = CFrame.fromAxisAngle(axis, angle * multiplier)
-            output = CFrame.new(current.Position) * (cameraBefore.Rotation * scaledDelta)
-            cam.CFrame = output
-        end
-
-        cameraBefore = output
-        hookStatus = preOk and postOk and "sensibilidade Scriptable ativa" or "erro ao ligar captura"
-        refresh()
-    end)
-end)
-
-local bindOk = preOk and postOk
-bound = bindOk
-if not bindOk then
-    pcall(function() RunService:UnbindFromRenderStep(preName) end)
-    pcall(function() RunService:UnbindFromRenderStep(renderName) end)
+-- V5: the previous versions used BindToRenderStep around Camera priority.
+-- The game's custom controller is a LocalScript and may update through RenderStepped,
+-- so the old callback could run before its camera update. Process after existing
+-- RenderStepped listeners and scale each raw rotation delta from a separate baseline.
+local lastRawCFrame = nil
+local lastOutputRotation = nil
+local preOk, postOk = true, true
+local function getYaw(cf)
+    local _, yaw, _ = cf:ToOrientation()
+    return yaw
 end
 
-if not bindOk then hookStatus = "erro ao iniciar sensibilidade Scriptable" end
+connections[#connections+1] = RunService.RenderStepped:Connect(function()
+    if closed then return end
+    local cam = workspace.CurrentCamera
+    if not cam then
+        lastRawCFrame, lastOutputRotation = nil, nil
+        hookStatus = "aguardando camera"
+        refresh()
+        return
+    end
+
+    local current = cam.CFrame
+    if cam.CameraType ~= Enum.CameraType.Scriptable then
+        lastRawCFrame, lastOutputRotation = nil, nil
+        hookStatus = "camera nao Scriptable"
+        refresh()
+        return
+    end
+
+    if not enabled then
+        lastRawCFrame = current
+        lastOutputRotation = current.Rotation
+        hookStatus = "camera: sensibilidade OFF"
+        refresh()
+        return
+    end
+
+    if not lastRawCFrame or not lastOutputRotation then
+        lastRawCFrame = current
+        lastOutputRotation = current.Rotation
+        hookStatus = "sensibilidade ativa; calibrando"
+        refresh()
+        return
+    end
+
+    -- Measure the controller's raw frame-to-frame rotation, not the modified
+    -- CFrame from the previous frame. This avoids feeding our output back as input.
+    local delta = lastRawCFrame.Rotation:ToObjectSpace(current.Rotation)
+    local axis, angle = delta:ToAxisAngle()
+
+    if angle > math.rad(90) then
+        lastRawCFrame = current
+        lastOutputRotation = current.Rotation
+        hookStatus = "reset de camera ignorado"
+        refresh()
+        return
+    end
+
+    local outputRotation
+    if math.abs(multiplier - 1) < 0.0001 then
+        outputRotation = current.Rotation
+    elseif angle > 0.00001 then
+        outputRotation = lastOutputRotation * CFrame.fromAxisAngle(axis, angle * multiplier)
+    else
+        outputRotation = lastOutputRotation
+    end
+
+    local output = CFrame.new(current.Position) * outputRotation
+    local rawYaw = getYaw(current)
+    local adjustedYaw = getYaw(output)
+    local yawCorrection = math.atan2(
+        math.sin(adjustedYaw - rawYaw),
+        math.cos(adjustedYaw - rawYaw)
+    )
+
+    cam.CFrame = output
+
+    -- The game's controller aligns the root with its raw camera yaw. Re-align
+    -- it to the scaled yaw only after that controller has finished this frame.
+    local character = player.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    if root and math.abs(yawCorrection) > 0.00001 then
+        root.CFrame = CFrame.new(root.Position)
+            * CFrame.Angles(0, yawCorrection, 0)
+            * root.CFrame.Rotation
+    end
+
+    lastRawCFrame = current
+    lastOutputRotation = outputRotation
+    hookStatus = "sensibilidade Scriptable ativa (RenderStepped)"
+    refresh()
+end)
+
+local bindOk = true
+bound = false
+
 refresh()
 
 ENV.MemeDashCameraSensitivity = {
