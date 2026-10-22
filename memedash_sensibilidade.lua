@@ -1,7 +1,5 @@
--- MEMEDASH CAMERA INPUT SENSITIVITY v2.0
--- Native input-path approach adapted from the user's Evade camera controller.
--- IMPORTANT: this does NOT overwrite CurrentCamera.CFrame, preventing camera tug-of-war.
--- Works only if MemeDash consumes Roblox PlayerModule CameraInput.getRotation.
+-- MEMEDASH CAMERA SENSITIVITY v3.0
+-- Applies sensitivity to Scriptable camera rotation deltas only; does not change character movement.
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -9,7 +7,7 @@ local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local ENV = (type(getgenv) == "function" and getgenv()) or _G
 
-local VERSION = "MemeDashCameraInputSensitivity-2.0"
+local VERSION = "MemeDashScriptableCameraSensitivity-3.0"
 local GUI_NAME = "MemeDashCameraSensitivityGui"
 local MIN, MAX, STEP = 0.1, 2.0, 0.1
 local player = Players.LocalPlayer
@@ -27,54 +25,13 @@ if type(previous) == "function" then pcall(previous) end
 
 local multiplier = math.clamp(tonumber(ENV.MemeDashCameraSensitivityMultiplier) or 1, MIN, MAX)
 local enabled = true
-local cameraInput, originalGetRotation, wrapper
 local gui, valueLabel, fill, knob, toggleButton
 local connections = {}
 local closed = false
-local hookStatus = "procurando CameraInput..."
-
-local function findCameraInput()
-    local scripts = player:FindFirstChild("PlayerScripts")
-    local pm = scripts and scripts:FindFirstChild("PlayerModule")
-    local cm = pm and pm:FindFirstChild("CameraModule")
-    if not cm then return nil end
-    local direct = cm:FindFirstChild("CameraInput")
-    if direct and direct:IsA("ModuleScript") then return direct end
-    for _, obj in ipairs(cm:GetDescendants()) do
-        if obj:IsA("ModuleScript") and obj.Name == "CameraInput" then return obj end
-    end
-    return nil
-end
-
-local function attach()
-    local module = findCameraInput()
-    if not module then
-        hookStatus = "CameraInput nao encontrado"
-        return false
-    end
-    local ok, result = pcall(require, module)
-    if not ok or type(result) ~= "table" or type(result.getRotation) ~= "function" then
-        hookStatus = "CameraInput sem getRotation"
-        return false
-    end
-    if cameraInput == result and result.getRotation == wrapper then
-        hookStatus = "hook ativo"
-        return true
-    end
-    if cameraInput and originalGetRotation and cameraInput.getRotation == wrapper then
-        pcall(function() cameraInput.getRotation = originalGetRotation end)
-    end
-    cameraInput = result
-    originalGetRotation = result.getRotation
-    wrapper = function(...)
-        local rotation = originalGetRotation(...)
-        if not enabled or typeof(rotation) ~= "Vector2" then return rotation end
-        return rotation * multiplier
-    end
-    local setOk = pcall(function() cameraInput.getRotation = wrapper end)
-    hookStatus = setOk and "hook ativo" or "nao foi possivel instalar hook"
-    return setOk
-end
+local hookStatus = "aguardando camera Scriptable"
+local renderName = "MemeDashCameraSensitivityRender"
+local lastCameraCFrame = nil
+local bound = false
 
 local function setMultiplier(value)
     multiplier = math.clamp(math.floor((tonumber(value) or 1) / STEP + 0.5) * STEP, MIN, MAX)
@@ -99,9 +56,7 @@ local function cleanup()
     closed = true
     for _, c in ipairs(connections) do pcall(function() c:Disconnect() end) end
     table.clear(connections)
-    if cameraInput and originalGetRotation and cameraInput.getRotation == wrapper then
-        pcall(function() cameraInput.getRotation = originalGetRotation end)
-    end
+    if bound then pcall(function() RunService:UnbindFromRenderStep(renderName) end); bound = false end
     if gui then pcall(function() gui:Destroy() end) end
     ENV.MemeDashCameraSensitivity = nil
     ENV.__MemeDashCameraSensitivityCleanup = nil
@@ -283,17 +238,55 @@ connections[#connections+1] = UserInputService.InputEnded:Connect(function(input
     end
 end)
 
-attach()
-refresh()
-local retry = 0
-connections[#connections+1] = RunService.Heartbeat:Connect(function()
-    if closed then return end
-    retry += 1
-    if retry % 30 == 0 and (not cameraInput or cameraInput.getRotation ~= wrapper) then
-        attach()
-        refresh()
-    end
+-- The game's camera is Scriptable, so PlayerModule.CameraInput is not the active path.
+-- Scale only the camera's rotational change after the game's own camera update.
+local camera = workspace.CurrentCamera
+if camera then lastCameraCFrame = camera.CFrame end
+local bindOk = pcall(function()
+    RunService:BindToRenderStep(renderName, Enum.RenderPriority.Camera.Value + 1, function()
+        if closed then return end
+        local cam = workspace.CurrentCamera
+        if not cam then
+            lastCameraCFrame = nil
+            hookStatus = "aguardando camera"
+            return
+        end
+        if cam.CameraType ~= Enum.CameraType.Scriptable then
+            lastCameraCFrame = cam.CFrame
+            hookStatus = "camera nao Scriptable"
+            return
+        end
+        local current = cam.CFrame
+        if not lastCameraCFrame then
+            lastCameraCFrame = current
+            hookStatus = "sensibilidade Scriptable ativa"
+            return
+        end
+        local previousRotation = lastCameraCFrame.Rotation
+        local currentRotation = current.Rotation
+        local delta = previousRotation:ToObjectSpace(currentRotation)
+        local axis, angle = delta:ToAxisAngle()
+        -- Ignore huge camera cuts/resets so they do not become a sudden spin.
+        if angle > math.rad(100) then
+            lastCameraCFrame = current
+            hookStatus = "sensibilidade Scriptable ativa"
+            return
+        end
+        local adjustedRotation = currentRotation
+        if enabled and angle > 0.00001 then
+            adjustedRotation = previousRotation * CFrame.fromAxisAngle(axis, angle * multiplier)
+        end
+        local adjusted = CFrame.new(current.Position) * adjustedRotation
+        if adjusted.Rotation ~= current.Rotation then
+            cam.CFrame = adjusted
+        end
+        lastCameraCFrame = cam.CFrame
+        hookStatus = enabled and "sensibilidade Scriptable ativa" or "camera: sensibilidade OFF"
+    end)
+    bound = true
 end)
+if not bindOk then hookStatus = "erro ao iniciar sensibilidade Scriptable" end
+refresh()
 
 ENV.MemeDashCameraSensitivity = {
     Version = VERSION,
