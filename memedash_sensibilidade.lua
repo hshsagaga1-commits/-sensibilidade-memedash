@@ -30,7 +30,8 @@ local connections = {}
 local closed = false
 local hookStatus = "aguardando camera Scriptable"
 local renderName = "MemeDashCameraSensitivityRender"
-local lastCameraCFrame = nil
+local lastRawCFrame = nil
+local lastAdjustedRotation = nil
 local bound = false
 
 local function setMultiplier(value)
@@ -247,40 +248,46 @@ local bindOk = pcall(function()
         if closed then return end
         local cam = workspace.CurrentCamera
         if not cam then
-            lastCameraCFrame = nil
+            lastRawCFrame = nil
+            lastAdjustedRotation = nil
             hookStatus = "aguardando camera"
             return
         end
         if cam.CameraType ~= Enum.CameraType.Scriptable then
-            lastCameraCFrame = cam.CFrame
+            lastRawCFrame = cam.CFrame
+            lastAdjustedRotation = cam.CFrame.Rotation
             hookStatus = "camera nao Scriptable"
             return
         end
         local current = cam.CFrame
-        if not lastCameraCFrame then
-            lastCameraCFrame = current
+        if not lastRawCFrame or not lastAdjustedRotation then
+            lastRawCFrame = current
+            lastAdjustedRotation = current.Rotation
             hookStatus = "sensibilidade Scriptable ativa"
             return
         end
-        local previousRotation = lastCameraCFrame.Rotation
+        -- Compare raw camera output frame-to-frame, not against our adjusted output.
+        -- This avoids a feedback loop when the game calculates camera rotation independently.
         local currentRotation = current.Rotation
-        local delta = previousRotation:ToObjectSpace(currentRotation)
+        local delta = lastRawCFrame.Rotation:ToObjectSpace(currentRotation)
         local axis, angle = delta:ToAxisAngle()
         -- Ignore huge camera cuts/resets so they do not become a sudden spin.
         if angle > math.rad(100) then
-            lastCameraCFrame = current
+            lastRawCFrame = current
+            lastAdjustedRotation = currentRotation
             hookStatus = "sensibilidade Scriptable ativa"
             return
         end
         local adjustedRotation = currentRotation
         if enabled and angle > 0.00001 then
-            adjustedRotation = previousRotation * CFrame.fromAxisAngle(axis, angle * multiplier)
+            adjustedRotation = lastAdjustedRotation * CFrame.fromAxisAngle(axis, angle * multiplier)
         end
         local adjusted = CFrame.new(current.Position) * adjustedRotation
         if adjusted.Rotation ~= current.Rotation then
             cam.CFrame = adjusted
         end
-        lastCameraCFrame = cam.CFrame
+        lastRawCFrame = current
+        lastAdjustedRotation = adjusted.Rotation
         hookStatus = enabled and "sensibilidade Scriptable ativa" or "camera: sensibilidade OFF"
     end)
     bound = true
