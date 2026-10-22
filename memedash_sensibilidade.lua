@@ -141,23 +141,47 @@ valueLabel.TextColor3, valueLabel.Font, valueLabel.TextSize = Color3.fromRGB(225
 valueLabel.TextXAlignment = Enum.TextXAlignment.Left
 valueLabel.Parent = panel
 
-local bar = Instance.new("Frame")
-bar.Name, bar.Position, bar.Size = "Slider", UDim2.fromOffset(14,59), UDim2.new(1,-28,0,10)
-bar.BackgroundColor3, bar.BorderSizePixel, bar.Active = Color3.fromRGB(68,72,82), 0, true
-bar.Parent = panel
-Instance.new("UICorner", bar).CornerRadius = UDim.new(1,0)
-fill = Instance.new("Frame")
-fill.BackgroundColor3, fill.BorderSizePixel, fill.Size = Color3.fromRGB(90,165,255), 0, UDim2.fromScale((multiplier-MIN)/(MAX-MIN),1)
-fill.Parent = bar
-Instance.new("UICorner", fill).CornerRadius = UDim.new(1,0)
-knob = Instance.new("Frame")
-knob.AnchorPoint, knob.Position, knob.Size = Vector2.new(0.5,0.5), UDim2.fromScale((multiplier-MIN)/(MAX-MIN),0.5), UDim2.fromOffset(18,18)
-knob.BackgroundColor3, knob.BorderSizePixel, knob.Active = Color3.fromRGB(250,250,252), 0, true
-knob.Parent = bar
-Instance.new("UICorner", knob).CornerRadius = UDim.new(1,0)
+-- Cria os controles principais ANTES do slider, para um erro visual não deixar só metade do painel.
 local toggle = button(panel,"CAMERA: ON",UDim2.new(1,-24,0,28),UDim2.fromOffset(12,98),Color3.fromRGB(42,126,82))
 toggleButton = toggle
-toggle.Activated:Connect(function() enabled = not enabled; refresh() end)
+toggle.Activated:Connect(function()
+    enabled = not enabled
+    refresh()
+end)
+
+local bar = Instance.new("Frame")
+bar.Name = "Slider"
+bar.Position = UDim2.fromOffset(14,59)
+bar.Size = UDim2.new(1,-28,0,12)
+bar.BackgroundColor3 = Color3.fromRGB(68,72,82)
+bar.BorderSizePixel = 0
+bar.Active = true
+bar.ClipsDescendants = false
+bar.Parent = panel
+
+fill = Instance.new("Frame")
+fill.Name = "Fill"
+fill.BackgroundColor3 = Color3.fromRGB(90,165,255)
+fill.BorderSizePixel = 0
+fill.Size = UDim2.new((multiplier-MIN)/(MAX-MIN),0,1,0)
+fill.Position = UDim2.new(0,0,0,0)
+fill.ZIndex = bar.ZIndex + 1
+fill.Parent = bar
+
+knob = Instance.new("Frame")
+knob.Name = "Knob"
+knob.AnchorPoint = Vector2.new(0.5,0.5)
+knob.Position = UDim2.new((multiplier-MIN)/(MAX-MIN),0,0.5,0)
+knob.Size = UDim2.fromOffset(18,18)
+knob.BackgroundColor3 = Color3.fromRGB(250,250,252)
+knob.BorderSizePixel = 0
+knob.ZIndex = fill.ZIndex + 1
+knob.Active = true
+knob.Parent = bar
+
+pcall(function() Instance.new("UICorner", bar).CornerRadius = UDim.new(1,0) end)
+pcall(function() Instance.new("UICorner", fill).CornerRadius = UDim.new(1,0) end)
+pcall(function() Instance.new("UICorner", knob).CornerRadius = UDim.new(1,0) end)
 
 local sliding, slideInput = false, nil
 local function updateX(x)
