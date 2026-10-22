@@ -239,63 +239,78 @@ connections[#connections+1] = UserInputService.InputEnded:Connect(function(input
     end
 end)
 
--- The game's camera is Scriptable, so PlayerModule.CameraInput is not the active path.
--- Scale only the camera's rotational change after the game's own camera update.
+-- Camera Scriptable sensitivity fix.
+-- Usa a última rotação ajustada como referência para evitar feedback.
+
 local camera = workspace.CurrentCamera
-if camera then lastCameraCFrame = camera.CFrame end
+local lastAdjustedCFrame = camera and camera.CFrame
+
 local bindOk = pcall(function()
-    RunService:BindToRenderStep(renderName, Enum.RenderPriority.Camera.Value + 1, function()
-        if closed then return end
-        local cam = workspace.CurrentCamera
-        if not cam then
-            lastRawCFrame = nil
-            lastAdjustedRotation = nil
-            hookStatus = "aguardando camera"
-            return
-        end
-        if cam.CameraType ~= Enum.CameraType.Scriptable then
-            lastRawCFrame = cam.CFrame
-            lastAdjustedRotation = cam.CFrame.Rotation
-            hookStatus = "camera nao Scriptable"
-            return
-        end
-        local current = cam.CFrame
-        if not lastRawCFrame or not lastAdjustedRotation then
-            lastRawCFrame = current
-            lastAdjustedRotation = current.Rotation
+    RunService:BindToRenderStep(
+        renderName,
+        Enum.RenderPriority.Camera.Value + 1,
+        function()
+            if closed then return end
+
+            local cam = workspace.CurrentCamera
+            if not cam then
+                lastAdjustedCFrame = nil
+                hookStatus = "aguardando camera"
+                refresh()
+                return
+            end
+
+            local current = cam.CFrame
+
+            if cam.CameraType ~= Enum.CameraType.Scriptable then
+                lastAdjustedCFrame = current
+                hookStatus = "camera nao Scriptable"
+                refresh()
+                return
+            end
+
+            if not lastAdjustedCFrame then
+                lastAdjustedCFrame = current
+                hookStatus = "sensibilidade Scriptable ativa"
+                refresh()
+                return
+            end
+
+            if not enabled then
+                lastAdjustedCFrame = current
+                hookStatus = "camera: sensibilidade OFF"
+                refresh()
+                return
+            end
+
+            local baseRotation = lastAdjustedCFrame.Rotation
+            local currentRotation = current.Rotation
+            local delta = baseRotation:ToObjectSpace(currentRotation)
+            local axis, angle = delta:ToAxisAngle()
+
+            if angle > math.rad(45) then
+                lastAdjustedCFrame = current
+                hookStatus = "sensibilidade Scriptable ativa"
+                refresh()
+                return
+            end
+
+            local outputRotation = currentRotation
+            if angle > 0.00001 then
+                outputRotation = baseRotation * CFrame.fromAxisAngle(axis, angle * multiplier)
+            end
+
+            local output = CFrame.new(current.Position) * outputRotation
+            cam.CFrame = output
+            lastAdjustedCFrame = output
+
             hookStatus = "sensibilidade Scriptable ativa"
-            return
+            refresh()
         end
-        -- Apply only the extra rotation needed relative to this frame's camera update.
-        -- Do not accumulate a separate adjusted rotation: that caused runaway spins.
-        local currentRotation = current.Rotation
-        local delta = lastRawCFrame.Rotation:ToObjectSpace(currentRotation)
-        local axis, angle = delta:ToAxisAngle()
-
-        -- Large jumps are camera cuts/resets, not normal finger movement.
-        if angle > math.rad(45) then
-            lastRawCFrame = current
-            hookStatus = "sensibilidade Scriptable ativa"
-            return
-        end
-
-        local adjustedRotation = currentRotation
-        if enabled and angle > 0.00001 then
-            -- current = previous * delta; add/remove only the (multiplier - 1) part.
-            -- This makes 0.5x genuinely smaller and 2.0x larger without a feedback accumulator.
-            adjustedRotation = currentRotation * CFrame.fromAxisAngle(axis, angle * (multiplier - 1))
-        end
-
-        if enabled and angle > 0.00001 then
-            cam.CFrame = CFrame.new(current.Position) * adjustedRotation
-            lastRawCFrame = cam.CFrame
-        else
-            lastRawCFrame = current
-        end
-        hookStatus = enabled and "sensibilidade Scriptable ativa" or "camera: sensibilidade OFF"
-    end)
+    )
     bound = true
 end)
+
 if not bindOk then hookStatus = "erro ao iniciar sensibilidade Scriptable" end
 refresh()
 
