@@ -1,4 +1,4 @@
--- MEMEDASH CAMERA SENSITIVITY v5.0
+-- MEMEDASH CAMERA SENSITIVITY v5.1
 -- Applies sensitivity to Scriptable camera rotation deltas only; does not change character movement.
 
 local Players = game:GetService("Players")
@@ -7,7 +7,7 @@ local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local ENV = (type(getgenv) == "function" and getgenv()) or _G
 
-local VERSION = "MemeDashScriptableCameraSensitivity-5.0"
+local VERSION = "MemeDashScriptableCameraSensitivity-5.1"
 local GUI_NAME = "MemeDashCameraSensitivityGui"
 local MIN, MAX, STEP = 0.1, 2.0, 0.1
 local player = Players.LocalPlayer
@@ -327,10 +327,18 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function()
     -- it to the scaled yaw only after that controller has finished this frame.
     local character = player.Character
     local root = character and character:FindFirstChild("HumanoidRootPart")
-    if root and math.abs(yawCorrection) > 0.00001 then
-        root.CFrame = CFrame.new(root.Position)
-            * CFrame.Angles(0, yawCorrection, 0)
-            * root.CFrame.Rotation
+    if root then
+        if multiplier < 0.9999 then
+            -- Below 1x, keep the character's yaw aligned to the slowed camera.
+            -- Applying only a per-frame correction leaves a growing yaw mismatch
+            -- when the game controller continues to turn toward its raw camera.
+            root.CFrame = CFrame.new(root.Position) * CFrame.Angles(0, adjustedYaw, 0)
+        elseif math.abs(yawCorrection) > 0.00001 then
+            -- Preserve the working 1x/2x behavior.
+            root.CFrame = CFrame.new(root.Position)
+                * CFrame.Angles(0, yawCorrection, 0)
+                * root.CFrame.Rotation
+        end
     end
 
     lastRawCFrame = current
