@@ -1,4 +1,4 @@
--- MEMEDASH DIAGNOSTIC v1.3 - report viewer
+-- MEMEDASH DIAGNOSTIC v1.4 - fixed visible copy/report controls
 local ok, err = pcall(function()
     local Players = game:GetService("Players")
     local UIS = game:GetService("UserInputService")
@@ -32,19 +32,19 @@ local ok, err = pcall(function()
     local lines = {}
     local copyButton = Instance.new("TextButton")
     copyButton.Name = "CopyReportButton"
-    copyButton.Size = UDim2.new(0.42, 0, 0, 34)
-    copyButton.Position = UDim2.new(0.52, 0, 0.08, 226)
+    copyButton.Size = UDim2.new(0.88, 0, 0, 42)
+    copyButton.Position = UDim2.new(0.06, 0, 0.08, 228)
     copyButton.BackgroundColor3 = Color3.fromRGB(45, 125, 220)
     copyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     copyButton.Text = "VER / COPIAR RELATÓRIO"
-    copyButton.TextSize = 12
+    copyButton.TextSize = 14
     copyButton.Font = Enum.Font.GothamBold
     copyButton.Parent = gui
 
     local reportBox = Instance.new("TextBox")
     reportBox.Name = "FullReport"
     reportBox.Size = UDim2.new(0.9, 0, 0.55, 0)
-    reportBox.Position = UDim2.new(0.05, 0, 0.25, 0)
+    reportBox.Position = UDim2.new(0.05, 0, 0.08, 278)
     reportBox.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
     reportBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     reportBox.TextSize = 12
@@ -67,7 +67,6 @@ local ok, err = pcall(function()
 
     local function log(s)
         lines[#lines + 1] = tostring(s)
-        while #lines > 12 do table.remove(lines, 1) end
         panel.Text = table.concat(lines, "\n")
         print("[MEMEDASH-DIAG] " .. tostring(s))
     end
