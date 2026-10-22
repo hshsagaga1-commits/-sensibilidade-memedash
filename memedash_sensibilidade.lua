@@ -266,28 +266,32 @@ local bindOk = pcall(function()
             hookStatus = "sensibilidade Scriptable ativa"
             return
         end
-        -- Compare raw camera output frame-to-frame, not against our adjusted output.
-        -- This avoids a feedback loop when the game calculates camera rotation independently.
+        -- Apply only the extra rotation needed relative to this frame's camera update.
+        -- Do not accumulate a separate adjusted rotation: that caused runaway spins.
         local currentRotation = current.Rotation
         local delta = lastRawCFrame.Rotation:ToObjectSpace(currentRotation)
         local axis, angle = delta:ToAxisAngle()
-        -- Ignore huge camera cuts/resets so they do not become a sudden spin.
-        if angle > math.rad(100) then
+
+        -- Large jumps are camera cuts/resets, not normal finger movement.
+        if angle > math.rad(45) then
             lastRawCFrame = current
-            lastAdjustedRotation = currentRotation
             hookStatus = "sensibilidade Scriptable ativa"
             return
         end
+
         local adjustedRotation = currentRotation
         if enabled and angle > 0.00001 then
-            adjustedRotation = lastAdjustedRotation * CFrame.fromAxisAngle(axis, angle * multiplier)
+            -- current = previous * delta; add/remove only the (multiplier - 1) part.
+            -- This makes 0.5x genuinely smaller and 2.0x larger without a feedback accumulator.
+            adjustedRotation = currentRotation * CFrame.fromAxisAngle(axis, angle * (multiplier - 1))
         end
-        local adjusted = CFrame.new(current.Position) * adjustedRotation
-        if adjusted.Rotation ~= current.Rotation then
-            cam.CFrame = adjusted
+
+        if enabled and angle > 0.00001 then
+            cam.CFrame = CFrame.new(current.Position) * adjustedRotation
+            lastRawCFrame = cam.CFrame
+        else
+            lastRawCFrame = current
         end
-        lastRawCFrame = current
-        lastAdjustedRotation = adjusted.Rotation
         hookStatus = enabled and "sensibilidade Scriptable ativa" or "camera: sensibilidade OFF"
     end)
     bound = true
