@@ -1,4 +1,4 @@
--- MEMEDASH CAMERA SENSITIVITY v3.0
+-- MEMEDASH CAMERA SENSITIVITY v4.0
 -- Applies sensitivity to Scriptable camera rotation deltas only; does not change character movement.
 
 local Players = game:GetService("Players")
@@ -7,7 +7,7 @@ local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local ENV = (type(getgenv) == "function" and getgenv()) or _G
 
-local VERSION = "MemeDashScriptableCameraSensitivity-3.0"
+local VERSION = "MemeDashScriptableCameraSensitivity-4.0"
 local GUI_NAME = "MemeDashCameraSensitivityGui"
 local MIN, MAX, STEP = 0.1, 2.0, 0.1
 local player = Players.LocalPlayer
@@ -246,10 +246,6 @@ end)
 -- Camera Scriptable sensitivity: capture before the game's camera update,
 -- then scale that frame's delta after the game has applied it.
 local cameraBefore = nil
-local function getYaw(cf)
-    local _, yaw, _ = cf:ToOrientation()
-    return yaw
-end
 local preName = renderName .. "_Pre"
 
 local preOk = pcall(function()
@@ -297,39 +293,24 @@ local postOk = pcall(function()
             return
         end
 
+        -- Scale only the camera's frame rotation delta. Do not rotate the
+        -- HumanoidRootPart: the game's own controller remains responsible for body alignment.
         local delta = cameraBefore.Rotation:ToObjectSpace(current.Rotation)
         local axis, angle = delta:ToAxisAngle()
 
-        -- Skip abrupt camera resets rather than amplifying them.
+        -- Ignore large discontinuities caused by respawn/camera resets.
         if angle > math.rad(90) then
             cameraBefore = current
-            hookStatus = "salto de camera ignorado"
+            hookStatus = "reset de camera ignorado"
             refresh()
             return
         end
 
-        local outputRotation = current.Rotation
+        local output = current
         if angle > 0.00001 then
-            outputRotation = cameraBefore.Rotation * CFrame.fromAxisAngle(axis, angle * multiplier)
-        end
-        local output = CFrame.new(current.Position) * outputRotation
-
-        -- X9 showed root yaw tracks camera yaw, so correct the root by the
-        -- same yaw difference to keep the body aligned with the adjusted camera.
-        local rawYaw = getYaw(current)
-        local adjustedYaw = getYaw(output)
-        local yawCorrection = math.atan2(
-            math.sin(adjustedYaw - rawYaw),
-            math.cos(adjustedYaw - rawYaw)
-        )
-
-        cam.CFrame = output
-        local character = player.Character
-        local root = character and character:FindFirstChild("HumanoidRootPart")
-        if root and math.abs(yawCorrection) > 0.00001 then
-            root.CFrame = CFrame.new(root.Position)
-                * CFrame.Angles(0, yawCorrection, 0)
-                * root.CFrame.Rotation
+            local scaledDelta = CFrame.fromAxisAngle(axis, angle * multiplier)
+            output = CFrame.new(current.Position) * (cameraBefore.Rotation * scaledDelta)
+            cam.CFrame = output
         end
 
         cameraBefore = output
