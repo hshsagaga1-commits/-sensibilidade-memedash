@@ -115,7 +115,7 @@ pcall(function() if type(gethui) == "function" then parent = gethui() end end)
 if not parent then parent = playerGui end
 gui = Instance.new("ScreenGui")
 gui.Name, gui.ResetOnSpawn, gui.DisplayOrder = GUI_NAME, false, 1000000
-gui.Parent = parent
+gui.Parent = playerGui
 
 local panel = Instance.new("Frame")
 panel.Name = "Panel"
@@ -147,7 +147,7 @@ bar.BackgroundColor3, bar.BorderSizePixel, bar.Active = Color3.fromRGB(68,72,82)
 bar.Parent = panel
 Instance.new("UICorner", bar).CornerRadius = UDim.new(1,0)
 fill = Instance.new("Frame")
-fill.BackgroundColor3, fill.BorderSizePixel, fill.Size = Color3.fromRGB(90,165,255), UDim2.fromScale((multiplier-MIN)/(MAX-MIN),1)
+fill.BackgroundColor3, fill.BorderSizePixel, fill.Size = Color3.fromRGB(90,165,255), 0, UDim2.fromScale((multiplier-MIN)/(MAX-MIN),1)
 fill.Parent = bar
 Instance.new("UICorner", fill).CornerRadius = UDim.new(1,0)
 knob = Instance.new("Frame")
