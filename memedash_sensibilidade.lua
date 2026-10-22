@@ -16,6 +16,12 @@ local player = Players.LocalPlayer
 assert(player, "Execute no cliente do jogo.")
 local playerGui = player:WaitForChild("PlayerGui")
 
+-- Remove stale copies left by older versions before building the interface.
+for _, parent in ipairs({playerGui, CoreGui}) do
+    local stale = parent:FindFirstChild(GUI_NAME)
+    if stale then pcall(function() stale:Destroy() end) end
+end
+
 local previous = ENV.__MemeDashCameraSensitivityCleanup
 if type(previous) == "function" then pcall(previous) end
 
@@ -77,11 +83,13 @@ local function setMultiplier(value)
 end
 
 local function refresh()
-    if not valueLabel then return end
-    local alpha = (multiplier - MIN) / (MAX - MIN)
-    valueLabel.Text = string.format("%.1fx  |  %s", multiplier, hookStatus)
-    fill.Size = UDim2.fromScale(alpha, 1)
-    knob.Position = UDim2.fromScale(alpha, 0.5)
+    if not valueLabel or not fill or not knob or not toggleButton then return end
+    local alpha = math.clamp((multiplier - MIN) / (MAX - MIN), 0, 1)
+    valueLabel.Text = string.format("%.1fx", multiplier)
+    local status = gui and gui:FindFirstChild("Panel") and gui.Panel:FindFirstChild("HookStatus")
+    if status then status.Text = hookStatus end
+    fill.Size = UDim2.new(alpha, 0, 1, 0)
+    knob.Position = UDim2.new(alpha, 0, 0.5, 0)
     toggleButton.Text = enabled and "CAMERA: ON" or "CAMERA: OFF"
     toggleButton.BackgroundColor3 = enabled and Color3.fromRGB(42,126,82) or Color3.fromRGB(105,65,65)
 end
@@ -214,7 +222,20 @@ maxLabel.TextSize = 10
 maxLabel.TextXAlignment = Enum.TextXAlignment.Right
 maxLabel.Parent = frame
 
-toggleButton = makeButton(frame,"CAMERA: ON",UDim2.new(1,-24,0,28),UDim2.fromOffset(12,83),Color3.fromRGB(48,105,175))
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Name = "HookStatus"
+statusLabel.BackgroundTransparency = 1
+statusLabel.Position = UDim2.fromOffset(12, 64)
+statusLabel.Size = UDim2.new(1, -24, 0, 14)
+statusLabel.Text = hookStatus
+statusLabel.TextColor3 = Color3.fromRGB(160,160,168)
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextSize = 9
+statusLabel.TextXAlignment = Enum.TextXAlignment.Center
+statusLabel.Parent = frame
+
+-- Keep the status separate from the value, without changing the simple old layout.
+toggleButton = makeButton(frame,"CAMERA: ON",UDim2.new(1,-24,0,25),UDim2.fromOffset(12,87),Color3.fromRGB(48,105,175))
 toggleButton.Activated:Connect(function()
     enabled = not enabled
     refresh()
