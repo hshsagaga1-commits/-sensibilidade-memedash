@@ -108,3 +108,15 @@ X10 v2 mantem a interface e o botao COPIAR, mas concentra a inspecao nos scripts
 ```lua
 loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-sensibilidade-memedash/main/MemeDashX10SettingsInspector.lua?nocache=" .. tostring(os.time()) .. tostring(math.random(100000,999999)), true))()
 ```
+
+## X10 V3: arquivo novo contra versao antiga em cache
+
+Se o relatorio ainda mostrar `Instances scanned=18001` e dezenas de `ReplicatedStorage.Items.Emotes.*.WalkSpeed`, voce executou o X10 antigo, nao o focado. Use **MemeDashX10FocusedV3.lua**; o relatorio correto comeca com `===== MEMEDASH X10 V3 / FOCUSED CAMERA CONFIG =====` e inclui `Build=X10-V3-FOCUSED-20261030`. Essa versao ignora as arvores de emotes e registra limites de varredura.
+
+**Loader X10 V3 sem cache:**
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-sensibilidade-memedash/main/MemeDashX10FocusedV3.lua?nocache=" .. tostring(os.time()) .. tostring(math.random(100000,999999)), true))()
+```
+
+Arquivos X10 anteriores preservados (X10 original em `MemeDashX10SettingsInspector_v1.lua` e X10 focado v2 em `MemeDashX10SettingsInspector.lua`). Leia apenas os valores/atributos acessiveis da camera original; nenhum script e descompilado nem modificado.
