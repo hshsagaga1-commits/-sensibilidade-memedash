@@ -61,3 +61,17 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-s
 ```
 
 **Teste:** abra o MemeDash, execute, aperte INICIAR, mova a camera durante 12 segundos e use COPIAR para mandar o relatorio. Se tiver que diagnosticar a V6 em particular, tome cuidado porque a V6 esta instavel; prefira o controle original primeiro. As regioes de toque sao aproximacoes e o X9 nao le o codigo-fonte privado do jogo.
+
+## MemeDash V7: prototipo experimental camera-only (depois do X9 v2)
+
+O X9 v2 mostrou grandes divergencias entre a orientacao horizontal da camera e do corpo durante movimentacao, entao a V7 nao altera HumanoidRootPart nem movimentos. Ela tenta restaurar o CFrame nativo no inicio do quadro, deixar o controlador do jogo calcular sua propria camera e aplicar um ajuste visual limitado no fim. Esta tecnica ainda depende da ordem de atualizacao do controlador Scriptable e NAO foi validada em jogo.
+
+**Use somente depois de reentrar no MemeDash se testou a V6 instavel. Nao execute V5.2, V6 e V7 simultaneamente.** Comeca em 1.0x sem modificacoes; 0.5x e 2.0x sao experimentais. OFF/X tenta restaurar a camera original. Limites de ajuste: yaw 65 graus; pitch 32 graus. Nao substitui scripts anteriores.
+
+### Loader V7 sem cache
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-sensibilidade-memedash/main/memedash_sensibilidade_v7.lua?nocache=" .. tostring(os.time()) .. tostring(math.random(100000,999999)), true))()
+```
+
+**Limites conhecidos:** a variacao de sensibilidade pode deixar de ser proporcional quando bate no limite angular; controles do proprio jogo podem sobrescrever CFrame ou ignorar a ordem de prioridades; desativar pode nao restaurar estados internos. Se o angulo falhar, OFF, X e reentre. Envie o resultado para corrigirmos com base em evidencias.
