@@ -143,3 +143,23 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-s
 ```
 
 Arquivo original X10 e demais scripts mantidos sem alteracoes.
+
+## V8 CONTROLADOR PROPRIO - PROTOTIPO EXPERIMENTAL (X11)
+
+**ATENCAO:** V8 ainda NAO testada em MemeDash e NAO esta comprovada funcional. Use apenas se aceitar o risco de camera se comportar diferente; em caso de erro use OFF/X e, se necessario, reentre no jogo. Evite usar com outras versoes de sensibilidade ativadas.
+
+O X11 (10 segundos, ~600 frames) mostrou alteracoes da camera E do corpo exclusivamente entre `PreCamera(199)` e `PostCamera(201)` em centenas de quadros. O script `Workspace.<jogador>.camera` estava `Enabled=true` nesse teste, diferentemente do X10 anterior, que encontrou `Disabled=true`. Portanto, a camera parece mudar de estado no decorrer do jogo. O timing nao prova qual script escreve Camera.CFrame.
+
+**Mudanca de estrategia:** em vez de corrigir `CFrame` a posteriori ou escrever no `HumanoidRootPart`, a V8 tenta pausar **temporariamente** o LocalScript `Workspace.<jogador>.camera` quando V8 esta ON com multiplicador diferente de 1.0, e posiciona a camera usando o deslocamento do dedo direito em `RenderPriority=199`, preservando o script `bodyrotation`. Uma verificacao em 201 detecta se outro controlador sobrescreveu a camera e desativa V8 se necessario. A camera original volta quando usar OFF, X ou 1.0x.
+
+**Calibracao estimada:** 0.9167 grau/pixel no viewport 724x375, observada nos X9/X11; pode diferir de outras circunstancias. Botao `X invertido`/`Y invertido` permite corrigir direcao se necessaria. O recorte horizontal (>43%) identifica de modo aproximado a area de camera, nao todos os controles do jogo.
+
+**LIMITES:** V8 substitui temporariamente o controlador nativo de camera: efeitos de camera do jogo (oclusao, bob, emotes, transicoes e scripts que dependem do controlador) podem nao ser reproduzidos. `LocalScript.Enabled=false` pode nao parar callbacks em algumas condicoes; para isso existe deteccao de conflito, mas ela nao garante recuperar todo estado. A interface V8 tem ON/OFF, 0.1x/0.5x/1.0x/2.0x, slider e X/Y invert. O codigo nunca escreve `HumanoidRootPart.CFrame` nem altera a movimentacao.
+
+**Loader V8 sem cache:**
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-sensibilidade-memedash/main/memedash_sensibilidade_v8_controlador.lua?nocache=" .. tostring(os.time()) .. tostring(math.random(100000,999999)), true))()
+```
+
+Os arquivos de V5/V6/V7 e X9/X10/X11 continuam preservados.
