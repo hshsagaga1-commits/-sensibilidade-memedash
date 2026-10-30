@@ -1,3 +1,7 @@
+## AVISO: V6 com falhas no teste em video
+
+A V6 de sensibilidade apresentou rotacoes instaveis em 2.0x e 0.5x. Nao e uma versao validada. Para comparar o movimento original, execute somente os diagnosticos, sem V5.2/V6. Desligar uma versao experimental pode exigir reentrar no jogo para restabelecer o estado original.
+
 # MemeDash Sensibilidade / Diagnóstico
 
 Scripts separados para testar a câmera no MemeDash.
