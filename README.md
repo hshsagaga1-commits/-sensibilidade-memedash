@@ -84,3 +84,15 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-s
 ```
 
 **Limites conhecidos:** a variacao de sensibilidade pode deixar de ser proporcional quando bate no limite angular; controles do proprio jogo podem sobrescrever CFrame ou ignorar a ordem de prioridades; desativar pode nao restaurar estados internos. Se o angulo falhar, OFF, X e reentre. Envie o resultado para corrigirmos com base em evidencias.
+
+## X10 - procura segura de configuracoes nativas da camera
+
+Novo diagnostico `MemeDashX10SettingsInspector.lua`: identifica o controlador visivel do MemeDash (`Workspace.<jogador>.camera`) e inspeciona somente nomes de scripts, atributos publicos e ValueBase expostos relacionados a Camera/Touch/Sensitivity. NAO decompila scripts, nao modifica valores, nao escreve em CFrame, corpo ou botoes.
+
+Esta investigacao veio depois do video de 15,4s que mostrou a V7 ainda instavel em 0.1x e 2.0x.
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-sensibilidade-memedash/main/MemeDashX10SettingsInspector.lua?nocache=" .. tostring(os.time()) .. tostring(math.random(100000,999999)), true))()
+```
+
+Uso: reentre no MemeDash sem V5/V6/V7 ativas, rode o loader acima, toque INSPECIONAR, depois COPIAR e envie o texto. A presenca de uma configuracao nao prova que o jogo a utiliza; em caso de nenhuma opcao exposta, sera preciso outra abordagem.
