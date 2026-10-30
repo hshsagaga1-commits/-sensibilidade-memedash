@@ -96,3 +96,15 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-s
 ```
 
 Uso: reentre no MemeDash sem V5/V6/V7 ativas, rode o loader acima, toque INSPECIONAR, depois COPIAR e envie o texto. A presenca de uma configuracao nao prova que o jogo a utiliza; em caso de nenhuma opcao exposta, sera preciso outra abordagem.
+
+## X10 v2: busca focada (depois do primeiro relatorio)
+
+X10 v1 mostrou scripts customizados `Workspace.<LocalPlayer>.camera` e `Workspace.<LocalPlayer>.bodyrotation`, mas o relatorio foi poluido por dezenas de `WalkSpeed` de emotes e a busca original atingiu o limite de 18.001 objetos.
+
+X10 v2 mantem a interface e o botao COPIAR, mas concentra a inspecao nos scripts locais, suas configuracoes/filhos publicos, PlayerScripts e diretorios de configuracao visiveis. Ignora as arvores de assets de emotes; avisa se uma busca for interrompida por limite. Tudo somente leitura e sem decompilacao. A antiga foi preservada em `MemeDashX10SettingsInspector_v1.lua`.
+
+**Loader X10 v2 sem cache:**
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-sensibilidade-memedash/main/MemeDashX10SettingsInspector.lua?nocache=" .. tostring(os.time()) .. tostring(math.random(100000,999999)), true))()
+```
