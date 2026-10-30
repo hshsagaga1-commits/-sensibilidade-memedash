@@ -230,7 +230,6 @@ local function inspect()
                 return
             end
             local obj = queue[head]
-            queue[head] = nil
             head = head + 1
             seen = seen + 1
             local lowName = obj.Name:lower()
