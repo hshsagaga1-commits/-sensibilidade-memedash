@@ -1,3 +1,14 @@
+## Conclusao dos diagnosticos X9 v2 e X10 V3
+
+O X9 v2 verificou que camera e corpo NEM SEMPRE acompanham a mesma rotacao: diferenca de ate 104,686 graus em uma sessao de 12 segundos (616/722 frames >5 graus), enquanto a camera foi Scriptable. Assim, nunca se deve presumir alinhamento 1:1 nem escrever em HumanoidRootPart.CFrame para ajustar a sensibilidade.
+
+O X10 V3 confirmou: `Workspace.<LocalPlayer>.camera` existe como LocalScript, porem `camera Disabled=true` no momento observado. `Workspace.<LocalPlayer>.bodyrotation` tambem existe. O inspetor nao encontrou ValueBase ou atributos publicos pertinentes a sensibilidade em seu escopo de busca. Uma parte de PlayerGui foi limitada por seguranca de desempenho (budget 4500), portanto esse resultado NAO prova inexistencia universal de uma configuracao.
+
+`UserInputService.MouseDeltaSensitivity`, `UserGameSettings.MouseSensitivity` e `UserGameSettings.GamepadCameraSensitivity` mostraram 1. Nada comprova que o controlador Scriptable de toque usa esses valores. O ajuste real teria que ocorrer na fonte ativa de transformacao de eventos touch em rotacao. Os hooks observacionais dos X9/X10 nao conseguem editar a entrada do controlador.
+
+V5.2, V6 e V7 sao experimentais e apresentaram falhas. Nao considerar uma nova versao funcional enquanto nao houver uma estrategia verificavel sem conflito com a camera nativa. Todos os scripts anteriores permanecem preservados.
+
+---
 ## RESULTADO DO TESTE V7 (30/10/2026): AINDA INSTAVEL
 
 Video de 15,4 s analisado. A interface mostrou 0.1x com OFF, depois 0.1x com ON, e finalmente 2.0x com ON. Com modificacoes ativadas, a camera ficou desalinhada com o personagem; por volta de 12,7 segundos, passou a apontar quase verticalmente para baixo. Nao foi comprovada sensibilidade proporcional. **Nao usar V7 como solucao funcional**.
