@@ -1,3 +1,12 @@
+## RESULTADO DO TESTE V7 (30/10/2026): AINDA INSTAVEL
+
+Video de 15,4 s analisado. A interface mostrou 0.1x com OFF, depois 0.1x com ON, e finalmente 2.0x com ON. Com modificacoes ativadas, a camera ficou desalinhada com o personagem; por volta de 12,7 segundos, passou a apontar quase verticalmente para baixo. Nao foi comprovada sensibilidade proporcional. **Nao usar V7 como solucao funcional**.
+
+Motivo tecnico provavel: V7 acumula offsets visuais em Camera.CFrame com limites de yaw +/-65 graus e pitch +/-32 graus. Ao atingir esses limites, o movimento original da camera continua; o multiplicador deixa de representar a sensibilidade pretendida. Este mecanismo nao altera o processamento original de TouchMoved no controlador Scriptable do jogo.
+
+Nenhum arquivo de V5.2, V6, V7 ou X9 foi alterado ou removido. Proxima investigacao: verificar se o LocalScript `Workspace.<jogador>.camera` ou algum objeto associado expoe NumberValue/atributo de sensibilidade, usando apenas APIs publicas de leitura. Sem essa informacao, outra versao de multiplicacao visual arriscaria repetir o defeito.
+
+---
 ## AVISO: V6 com falhas no teste em video
 
 A V6 de sensibilidade apresentou rotacoes instaveis em 2.0x e 0.5x. Nao e uma versao validada. Para comparar o movimento original, execute somente os diagnosticos, sem V5.2/V6. Desligar uma versao experimental pode exigir reentrar no jogo para restabelecer o estado original.
