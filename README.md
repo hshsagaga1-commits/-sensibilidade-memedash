@@ -131,3 +131,15 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-s
 ```
 
 Arquivos X10 anteriores preservados (X10 original em `MemeDashX10SettingsInspector_v1.lua` e X10 focado v2 em `MemeDashX10SettingsInspector.lua`). Leia apenas os valores/atributos acessiveis da camera original; nenhum script e descompilado nem modificado.
+
+## X11: linha do tempo da camera (somente leitura)
+
+Depois do X10 V3, ficou claro que o script `Workspace.<LocalPlayer>.camera` estava `Enabled=false` e nao havia configuracao publica de sensibilidade exposta nos diretorios verificados. O X11 nao muda a camera nem o personagem. Ele registra em 10 pontos de cada frame quando o `Camera.CFrame` e o yaw do HumanoidRootPart mudam, e conta eventos de alteracao do CFrame. Isso pode indicar a janela de atualizacao, mas **nao prova qual script realizou a alteracao**.
+
+Use em sessao limpa, sem V5/V6/V7. Toque INICIAR, movimente a camera e o personagem por 10 segundos, toque COPIAR e envie o relatorio. Nao ha nenhuma versao de sensibilidade validada ate o momento.
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-sensibilidade-memedash/main/MemeDashX11RenderTimeline.lua?nocache=" .. tostring(os.time()) .. tostring(math.random(100000,999999)), true))()
+```
+
+Arquivo original X10 e demais scripts mantidos sem alteracoes.
