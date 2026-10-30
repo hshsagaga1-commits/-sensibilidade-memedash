@@ -12,8 +12,8 @@ assert(player, "Execute no cliente do MemeDash.")
 local pg = player:WaitForChild("PlayerGui")
 local ENV = (type(getgenv) == "function" and getgenv()) or _G
 
-if type(ENV.__MemeDashX10V3Cleanup) == "function" then
-    pcall(ENV.__MemeDashX10V3Cleanup)
+if type(ENV.__MemeDashX10Cleanup) == "function" then
+    pcall(ENV.__MemeDashX10Cleanup)
 end
 if type(ENV.__MemeDashX10V3Cleanup) == "function" then
     pcall(ENV.__MemeDashX10V3Cleanup)
@@ -155,6 +155,7 @@ local function inspect()
     local out = {
         "===== MEMEDASH X10 V3 / FOCUSED CAMERA CONFIG =====",
         "Mode = read-only; NO source reading, hooks or camera mutations.",
+        "Build=X10-V3-FOCUSED-20261030; new filename; no emote asset scan.",
         "PlaceId="..tostring(game.PlaceId),
         "TouchEnabled="..tostring(UIS.TouchEnabled),
         "Viewport="..tostring(Workspace.CurrentCamera and Workspace.CurrentCamera.ViewportSize),
@@ -361,7 +362,7 @@ end)
 connect(copy.Activated,function()
     if running then return end
     if not report:find("===== MEMEDASH X10 V3",1,true)
-        and not report:find("MEMEDASH X10 ERROR",1,true) then
+        and not report:find("MEMEDASH X10 V3 ERROR",1,true) then
         status.Text="Clique INSPECIONAR antes."
         return
     end
