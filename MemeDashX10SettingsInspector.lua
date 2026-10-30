@@ -1,4 +1,4 @@
--- MemeDash X10 | Native Camera Settings Inspector v1.0
+-- MemeDash X10 | Native Camera Settings Inspector v2.0
 -- Read-only standard Roblox instance inspection: no decompilation.
 -- Created because camera-only V7 accumulated visual offsets and failed.
 -- Does not change touch, camera, body, FOV or player controls.
@@ -50,7 +50,7 @@ local function label(t,y,h,size,color)
     l.Parent = panel
     return l
 end
-local title = label("MEMEDASH X10 • CAMERA SOURCE MAP",7,27,13,
+local title = label("MEMEDASH X10 v2 • CAMERA SETTINGS",7,27,13,
     Color3.fromRGB(145,207,255))
 title.Font = Enum.Font.GothamBold
 local desc = label("Procura configuracoes de sensibilidade expostas pelo jogo. Apenas leitura.",40,42,11)
@@ -120,7 +120,7 @@ local function relevantName(s)
         or s:find("look",1,true) or s:find("pitch",1,true)
         or s:find("yaw",1,true) or s:find("input",1,true)
         or s:find("touch",1,true) or s:find("aim",1,true)
-        or s:find("speed",1,true) or s:find("rotat",1,true)
+        or s:find("rotat",1,true) or s:find("bodyrotation",1,true)
 end
 local function attrs(obj,out)
     local ok, values = pcall(function() return obj:GetAttributes() end)
@@ -178,57 +178,125 @@ local function inspect()
         end
     end
     add("NOTE: mouse/gamepad settings may NOT affect mobile touch.")
+    add("Input controls in settings are NOT evidence of the custom script using them.")
     add("")
-    local sources = {
-        {"Workspace character",player.Character},
-        {"PlayerScripts",player:FindFirstChild("PlayerScripts")},
-        {"ReplicatedStorage",ReplicatedStorage},
-        {"ReplicatedFirst",game:GetService("ReplicatedFirst")}
+    -- X10 v2: prioritize only the specific player camera scripts and nearby
+    -- public configuration. Emote assets deliberately excluded.
+    local workspaceFolder = Workspace:FindFirstChild(player.Name)
+    local roots = {
+        {"Workspace player folder", workspaceFolder},
+        {"Character", player.Character},
+        {"PlayerScripts", player:FindFirstChild("PlayerScripts")},
+        {"PlayerGui (limited settings)", pg},
+        {"ReplicatedFirst", game:GetService("ReplicatedFirst")}
     }
-    local paths = {}
-    local values = {}
-    local candidates = {}
-    local visitedCount = 0
-    local relevantCount = 0
-    local unique = {}
-    for _,entry in ipairs(sources) do
-        local root = entry[2]
-        if root then
-            local ok,list = pcall(function() return root:GetDescendants() end)
-            if ok then
-                for _,obj in ipairs(list) do
-                    visitedCount=visitedCount+1
-                    if visitedCount>18000 then break end
-                    if not unique[obj] then
-                        unique[obj]=true
-                        local nameRelevant=relevantName(obj.Name)
-                        local isScript=obj:IsA("LocalScript") or obj:IsA("ModuleScript")
-                        local isValue=obj:IsA("ValueBase")
-                        local isConfiguration=obj:IsA("Configuration")
-                        local path=safeName(obj)
-                        if isScript and nameRelevant and #paths<70 then
-                            paths[#paths+1]=path.." ["..obj.ClassName.."]"
-                        end
-                        if (isValue and (nameRelevant or relevantName(obj.Parent.Name)))
-                            and #values<120 then
-                            values[#values+1]=path.." ["..obj.ClassName..
-                                "] = "..safeValue(obj)
-                        end
-                        if (nameRelevant and (isScript or isConfiguration or isValue))
-                            and #candidates<70 then
-                            candidates[#candidates+1]=obj
-                        end
-                        if nameRelevant then relevantCount=relevantCount+1 end
+    local paths, values, candidates = {}, {}, {}
+    local visitedCount, relevantCount = 0, 0
+    local unique, skippedRoots, interruptedRoots = {}, {}, {}
+    local function check(obj)
+        if unique[obj] then return end
+        unique[obj] = true
+        visitedCount = visitedCount + 1
+        local n = obj.Name:lower()
+        local named = relevantName(n)
+        local isScript = obj:IsA("LocalScript") or obj:IsA("ModuleScript")
+        local isValue = obj:IsA("ValueBase")
+        local isConfiguration = obj:IsA("Configuration")
+        if named then relevantCount = relevantCount + 1 end
+        local parentNamed = obj.Parent and relevantName(obj.Parent.Name)
+        if isScript and named and #paths < 90 then
+            paths[#paths+1] = safeName(obj) .. " [" .. obj.ClassName .. "]"
+        end
+        if isValue and (named or parentNamed) and #values < 90 then
+            values[#values+1] = safeName(obj) .. " [" .. obj.ClassName ..
+                "] = " .. safeValue(obj)
+        end
+        if (named and (isScript or isConfiguration or isValue or obj:IsA("Folder")))
+            or (isValue and parentNamed) then
+            if #candidates < 90 then candidates[#candidates+1] = obj end
+        end
+    end
+    -- A bounded per-root traversal avoids a giant unhelpful inventory of emotes.
+    local function walk(root, title, budget)
+        if not root then
+            skippedRoots[#skippedRoots+1] = title .. " (unavailable)"
+            return
+        end
+        local queue, head, seen = {root}, 1, 0
+        while head <= #queue do
+            if seen >= budget then
+                interruptedRoots[#interruptedRoots+1] =
+                    title .. " (budget " .. tostring(budget) .. " reached)"
+                return
+            end
+            local obj = queue[head]
+            queue[head] = nil
+            head = head + 1
+            seen = seen + 1
+            local lowName = obj.Name:lower()
+            local isEmotes = lowName == "emotes" or lowName == "items"
+            if not isEmotes then
+                check(obj)
+                local ok, children = pcall(function() return obj:GetChildren() end)
+                if ok then
+                    for _,child in ipairs(children) do
+                        queue[#queue+1] = child
                     end
                 end
             end
+            if seen % 400 == 0 then task.wait() end
         end
-        if visitedCount>18000 then break end
     end
+    for _,entry in ipairs(roots) do
+        walk(entry[2], entry[1], 4500)
+    end
+    -- Only inspect ReplicatedStorage top-level or folders with promising names.
+    check(ReplicatedStorage)
+    local ok, top = pcall(function() return ReplicatedStorage:GetChildren() end)
+    if ok then
+        for _,obj in ipairs(top) do
+            if relevantName(obj.Name) or obj.Name:lower()=="settings"
+                or obj.Name:lower()=="config" or obj.Name:lower()=="options" then
+                walk(obj, "ReplicatedStorage."..obj.Name, 1600)
+            end
+        end
+    end
+    -- Important: never infer that a public configuration is actually read by
+    -- the custom LocalScript. Only the script's author/source can confirm it.
+    local camera = workspaceFolder and workspaceFolder:FindFirstChild("camera")
+    local rotation = workspaceFolder and workspaceFolder:FindFirstChild("bodyrotation")
+    add("[DIRECT MEMEDASH CONTROLLERS]")
+    add("Workspace player camera=" ..
+        (camera and safeName(camera).." ["..camera.ClassName.."]" or "not found"))
+    add("Workspace player bodyrotation=" ..
+        (rotation and safeName(rotation).." ["..rotation.ClassName.."]" or "not found"))
+    if camera then
+        add("camera Disabled="..tostring((function()
+            local ok2, v=pcall(function() return camera.Enabled end)
+            return ok2 and v or "unavailable"
+        end)()))
+        attrs(camera,out)
+        for _,child in ipairs(camera:GetChildren()) do
+            add("camera child: "..safeName(child).." ["..child.ClassName.."]" ..
+                (child:IsA("ValueBase") and (" = "..safeValue(child)) or ""))
+            attrs(child,out)
+        end
+    end
+    if rotation then attrs(rotation,out) end
+    add("")
+    add("[SCOPE]")
+    add("Skipped large emote/item asset trees.")
+    if #skippedRoots>0 then add("Unavailable roots: "..table.concat(skippedRoots," | ")) end
+    if #interruptedRoots>0 then
+        add("WARNING: incomplete bounded scans: "..table.concat(interruptedRoots," | "))
+    else
+        add("All selected root scans completed within per-root limits.")
+    end
+    add("")
     table.sort(paths)
     table.sort(values)
     add("[COUNTS]")
-    add("Instances scanned="..tostring(visitedCount))
+    add("Instances scanned (focused)="..tostring(visitedCount))
     add("Relevant named instances="..tostring(relevantCount))
     add("Relevant scripts="..tostring(#paths))
     add("Relevant ValueBase="..tostring(#values))
@@ -245,7 +313,7 @@ local function inspect()
     if #candidates==0 then add("(no candidates)") end
     local count=0
     for _,obj in ipairs(candidates) do
-        -- Avoid filling report with default Roblox PlayerModule internals.
+        -- Report only candidate objects from focused search.
         local path=safeName(obj)
         local hasAttrs=false
         local ok,at=pcall(function() return obj:GetAttributes() end)
@@ -263,6 +331,7 @@ local function inspect()
     add("game's camera LocalScript actually reads it; presence alone proves nothing.")
     add("If none exists, ordinary instance APIs cannot show the internal Lua code.")
     add("No game values were changed, and no source was read.")
+    add("X10 v2 ignores emote assets. A missing value is not proof one cannot exist.")
     add("===== END X10 =====")
     return table.concat(out,"\n")
 end
