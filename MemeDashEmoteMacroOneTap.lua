@@ -28,6 +28,8 @@ local running,alive=false,true
 local sector=6
 local lastClick=0
 local clicks,successes,failures=0,0,0
+local startedAt=os.clock()
+local logLines={}
 local connections={}
 local gui, panel, mainButton, sectorLabel, statusLabel
 
@@ -37,6 +39,9 @@ local function connect(signal,fn)
     return c
 end
 local function setStatus(t)
+    local entry=string.format("%.2fs | %s",os.clock()-startedAt,tostring(t))
+    logLines[#logLines+1]=entry
+    if #logLines>70 then table.remove(logLines,1) end
     if statusLabel and statusLabel.Parent then
         statusLabel.Text=t
     end
@@ -211,6 +216,7 @@ local function doMacro()
                     return
                 end
                 openMethod=method
+                setStatus("1/2 Evento: "..tostring(openMethod))
                 btn=waitUntil(function()
                     local b=findSectorButton(sector)
                     return (b and isVisibleOnScreen(b)) and b or nil
@@ -231,6 +237,7 @@ local function doMacro()
                 return
             end
             local fired,method=activateButton(btn)
+            setStatus("2/2 Evento: "..tostring(method))
             if not fired then
                 finish(false,"Falha no setor "..sector..": "..tostring(method))
                 return
@@ -274,7 +281,7 @@ gui.ResetOnSpawn=false
 gui.Parent=pg
 panel=Instance.new("Frame")
 panel.Name="Panel"
-panel.Size=UDim2.fromOffset(160,113)
+panel.Size=UDim2.fromOffset(160,149)
 panel.Position=UDim2.new(.08,0,.52,0)
 panel.BackgroundColor3=Color3.fromRGB(20,26,39)
 panel.BorderSizePixel=0
@@ -331,15 +338,76 @@ local plus=makeButton("+",UDim2.fromOffset(124,68),
 
 statusLabel=Instance.new("TextLabel")
 statusLabel.BackgroundTransparency=1
-statusLabel.Position=UDim2.fromOffset(7,97)
-statusLabel.Size=UDim2.fromOffset(146,14)
+statusLabel.Position=UDim2.fromOffset(7,96)
+statusLabel.Size=UDim2.fromOffset(146,27)
 statusLabel.TextColor3=Color3.fromRGB(178,197,214)
 statusLabel.TextXAlignment=Enum.TextXAlignment.Left
 statusLabel.TextSize=9
 statusLabel.Font=Enum.Font.Gotham
 statusLabel.Text="1 toque = abrir + selecionar"
+statusLabel.TextWrapped=true
 statusLabel.TextTruncate=Enum.TextTruncate.AtEnd
 statusLabel.Parent=panel
+local logButton=makeButton("COPIAR LOG",UDim2.fromOffset(7,123),
+    UDim2.fromOffset(146,23),Color3.fromRGB(46,102,170),10)
+
+local function showLogText(text)
+    local modal=Instance.new("Frame")
+    modal.Size=UDim2.new(.94,0,.76,0)
+    modal.Position=UDim2.new(.03,0,.12,0)
+    modal.BackgroundColor3=Color3.fromRGB(22,28,40)
+    modal.ZIndex=10
+    modal.Parent=gui
+    local field=Instance.new("TextBox")
+    field.Size=UDim2.new(1,-12,1,-53)
+    field.Position=UDim2.fromOffset(6,6)
+    field.Text=text
+    field.TextColor3=Color3.new(1,1,1)
+    field.TextSize=11
+    field.TextXAlignment=Enum.TextXAlignment.Left
+    field.TextYAlignment=Enum.TextYAlignment.Top
+    field.Font=Enum.Font.Code
+    field.MultiLine=true
+    field.TextWrapped=false
+    field.ClearTextOnFocus=false
+    field.BackgroundColor3=Color3.fromRGB(30,35,48)
+    field.ZIndex=11
+    field.Parent=modal
+    local done=Instance.new("TextButton")
+    done.Size=UDim2.fromOffset(84,36)
+    done.Position=UDim2.new(1,-91,1,-43)
+    done.Text="FECHAR"
+    done.Font=Enum.Font.GothamBold
+    done.TextColor3=Color3.new(1,1,1)
+    done.BackgroundColor3=Color3.fromRGB(151,64,81)
+    done.ZIndex=12
+    done.Parent=modal
+    connect(done.Activated,function() modal:Destroy() end)
+end
+connect(logButton.Activated,function()
+    local lines={
+        "===== MEMEDASH MACRO LOG =====",
+        "Build="..BUILD,
+        "Sector="..tostring(sector),
+        "firesignal="..tostring(type(firesignal)),
+        "getconnections="..tostring(type(getconnections)),
+        "Attempts="..tostring(clicks),
+        "Dispatched="..tostring(successes),
+        "Failures="..tostring(failures),
+        ""
+    }
+    for _,entry in ipairs(logLines) do lines[#lines+1]=entry end
+    lines[#lines+1]="===== END LOG ====="
+    local content=table.concat(lines,"\n")
+    local clip=(type(setclipboard)=="function" and setclipboard)
+        or (type(toclipboard)=="function" and toclipboard)
+    if clip and pcall(clip,content) then
+        setStatus("LOG COPIADO! Cole na conversa")
+    else
+        showLogText(content)
+        setStatus("Selecione o log da caixa para copiar")
+    end
+end)
 
 local function changeSector(n)
     if running then return end
