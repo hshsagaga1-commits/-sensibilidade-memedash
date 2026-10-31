@@ -163,3 +163,19 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-s
 ```
 
 Os arquivos de V5/V6/V7 e X9/X10/X11 continuam preservados.
+
+## MemeDash V8.1: camera 0,1x-2,0x + sincronizacao do corpo (experimental)
+
+O usuario testou V8 e confirmou que a camera ficou de fato mais rapida em 2x e mais lenta em 0.5x, porem o corpo do personagem permaneceu orientado na direcao antiga enquanto a camera girava. V8.1 se baseia na V8 original, **preservada em `memedash_sensibilidade_v8_controlador.lua` sem alteracoes**, e adiciona sincronizacao de yaw do personagem como prototipo separado.
+
+V8.1 usa o proprio yaw calculado pela V8 a partir de TouchMoved; guarda o offset horizontal original entre o personagem e a camera no momento de ativacao. Depois da janela 199-201 detectada no X11, o codigo aplica uma correcao de yaw na `HumanoidRootPart.CFrame` na prioridade 205, preservando a posicao e a inclinacao atuais da raiz. A camera **nao le de volta o yaw do corpo**, reduzindo o risco do antigo ciclo de feedback. Sem escrita de posicao, velocidade, WalkSpeed, AutoRotate ou joystick. O sistema do jogo pode disputar a rotacao da raiz, portanto e um teste, nao resultado confirmado.
+
+Botao **CORPO ON/OFF** permite desligar apenas a sincronizacao do personagem mantendo a camera V8 funcionando. **OFF, 1.0x ou X** desligam a camera alternativa e tentam religar o LocalScript original. A sincronizacao pula estados sentados, ancorados, sem humanoid ativo e camera/character invalida. Ao fazer OFF ou fechar, reentre no jogo se o controlador original nao voltar ao normal.
+
+**Loader V8.1 sem cache:**
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-sensibilidade-memedash/main/memedash_sensibilidade_v8_1_corpo.lua?nocache=" .. tostring(os.time()) .. tostring(math.random(100000,999999)), true))()
+```
+
+Teste recomendado: reentrar no MemeDash sem V8 antiga ativa, executar V8.1, ligar 0.5x e 2x com CORPO ON; verificar se o avatar gira junto sem atrapalhar movimento. Se houver conflito, CORPO OFF e, se necessario, sair/reentrar. Nenhum script legado foi excluido.
