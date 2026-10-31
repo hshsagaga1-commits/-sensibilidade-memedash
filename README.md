@@ -179,3 +179,17 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-s
 ```
 
 Teste recomendado: reentrar no MemeDash sem V8 antiga ativa, executar V8.1, ligar 0.5x e 2x com CORPO ON; verificar se o avatar gira junto sem atrapalhar movimento. Se houver conflito, CORPO OFF e, se necessario, sair/reentrar. Nenhum script legado foi excluido.
+
+## V8.2: orientacao invertida do personagem (experimental)
+
+Depois de testar V8.1, usuario confirmou que a camera em 2x e 0.5x mudou de velocidade e que o corpo passou a acompanhar, mas comentou que 'o bagui ta ao contrario'. Como essa frase pode significar personagem de costas (deslocamento de 180 graus) ou giro espelhado, V8.2 oferece ambas as correcoes **independentes**, sem alterar o multiplicador de camera/touch herdado da V8.
+
+`FRENTE +180` vem ligado por padrao e aplica 180 graus ao yaw-alvo do corpo; tocar nele alterna para `FRENTE 0` (igual ao alinhamento anterior). `GIRO NORMAL` vem ligado por padrao e pode ser alternado para `GIRO INV` (o giro horizontal do corpo passa a ter sinal contrario ao giro da camera). Ao alternar o sentido do giro, V8.2 recalibra os angulos de referencia para evitar giro brusco imediato. Os botoes preexistentes `X normal/invertido` e `Y normal/invertido` continuam afetando a camera e o toque, nao apenas o corpo. `CORPO ON/OFF` continua disponivel.
+
+V8.2 ainda e experimental, pois sincroniza o corpo com escrita de orientacao na `HumanoidRootPart.CFrame` (mantendo a posicao). Isso pode conflitar com fisica, controle de movimento ou outros scripts; se houver problema use CORPO OFF, OFF/X e reentre se necessario. V8/V8.1 preservadas sem alteracoes.
+
+**Loader V8.2 sem cache:**
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-sensibilidade-memedash/main/memedash_sensibilidade_v8_2_direcao.lua?nocache=" .. tostring(os.time()) .. tostring(math.random(100000,999999)), true))()
+```
