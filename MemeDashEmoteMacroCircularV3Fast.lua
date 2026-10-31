@@ -1,4 +1,5 @@
 -- MemeDash | Macro Circular V3 (iPhone) - larger / faster start-stop
+-- DRAG FIX: preserve UDim2 Position when dragging; never feed AbsolutePosition directly into Position.
 -- Based on the WORKING V2. Same GUI paths and click dispatch logic.
 -- Faster readiness polling; no artificial 100 ms delay before sector click.
 -- Circular button default 124 px (was 72). Adjustable in Settings.
@@ -34,7 +35,7 @@ if prior then prior:Destroy() end
 local priorV3=pg:FindFirstChild("MemeDashEmoteMacroCircularV3")
 if priorV3 then priorV3:Destroy() end
 
-local BUILD="EmoteMacroCircularV3-FAST-LARGE-20261030"
+local BUILD="EmoteMacroCircularV3-FAST-LARGE-DRAGFIX-20261030"
 local running,alive=false,true
 local sector=6
 local lastClick=0
@@ -494,6 +495,8 @@ end)
 
 local function changeCircleSize(value)
     local nextSize=math.clamp(tonumber(value) or circleSize,MIN_CIRCLE,MAX_CIRCLE)
+    local prevPosition=panel.Position
+    local prevAbsolute=panel.AbsolutePosition
     circleSize=nextSize
     local panelSize=circleSize+34
     panel.Size=UDim2.fromOffset(panelSize,panelSize)
@@ -505,10 +508,12 @@ local function changeCircleSize(value)
     -- Keep the circle visible if enlarged near the screen's edge.
     local cam=Workspace.CurrentCamera
     local vp=cam and cam.ViewportSize or Vector2.new(724,375)
-    local pos=panel.AbsolutePosition
-    panel.Position=UDim2.fromOffset(
-        math.clamp(pos.X,0,math.max(0,vp.X-panelSize)),
-        math.clamp(pos.Y,0,math.max(0,vp.Y-panelSize))
+    local x=math.clamp(prevAbsolute.X,0,math.max(0,vp.X-panelSize))
+    local y=math.clamp(prevAbsolute.Y,0,math.max(0,vp.Y-panelSize))
+    -- AbsolutePosition is screen-space; preserve Position's offset/scale.
+    panel.Position=UDim2.new(
+        prevPosition.X.Scale,prevPosition.X.Offset+(x-prevAbsolute.X),
+        prevPosition.Y.Scale,prevPosition.Y.Offset+(y-prevAbsolute.Y)
     )
     if settingsPanel.Visible then
         task.defer(moveSettings)
@@ -542,8 +547,9 @@ connect(settingsButton.Activated,function()
     if settingsPanel.Visible then moveSettings() end
 end)
 
--- Only a SHORT touch runs the macro; dragging never does.
-local dragInput,downAt,startAnchor=nil,nil,nil
+-- Short tap executes macro; actual drag moves it. No warp on repeated drags.
+-- Position (UDim2 relative to ScreenGui) != AbsolutePosition (screen pixel).
+local dragInput,downAt,startUDim,startAbsolute=nil,nil,nil,nil
 local dragging=false
 connect(mainButton.InputBegan,function(input)
     if dragInput then return end
@@ -551,11 +557,12 @@ connect(mainButton.InputBegan,function(input)
         input.UserInputType~=Enum.UserInputType.MouseButton1 then return end
     dragInput=input
     downAt=input.Position
-    startAnchor=panel.AbsolutePosition
+    startUDim=panel.Position
+    startAbsolute=panel.AbsolutePosition
     dragging=false
 end)
 connect(UIS.InputChanged,function(input)
-    if not dragInput or not downAt or not startAnchor or locked then return end
+    if not dragInput or not downAt or not startUDim or not startAbsolute or locked then return end
     if input~=dragInput and not
         (dragInput.UserInputType==Enum.UserInputType.MouseButton1
         and input.UserInputType==Enum.UserInputType.MouseMovement) then
@@ -567,16 +574,21 @@ connect(UIS.InputChanged,function(input)
     local camera=Workspace.CurrentCamera
     local vp=camera and camera.ViewportSize or Vector2.new(724,375)
     local size=panel.AbsoluteSize
-    panel.Position=UDim2.fromOffset(
-        math.clamp(startAnchor.X+delta.X,0,math.max(0,vp.X-size.X)),
-        math.clamp(startAnchor.Y+delta.Y,0,math.max(0,vp.Y-size.Y))
+    -- Calculate a clamped screen-space displacement, but APPLY that
+    -- displacement to the UDim2 taken when THIS drag began.
+    local targetX=math.clamp(startAbsolute.X+delta.X,0,math.max(0,vp.X-size.X))
+    local targetY=math.clamp(startAbsolute.Y+delta.Y,0,math.max(0,vp.Y-size.Y))
+    panel.Position=UDim2.new(
+        startUDim.X.Scale,startUDim.X.Offset+(targetX-startAbsolute.X),
+        startUDim.Y.Scale,startUDim.Y.Offset+(targetY-startAbsolute.Y)
     )
     if settingsPanel.Visible then moveSettings() end
 end)
 connect(UIS.InputEnded,function(input)
     if input~=dragInput then return end
-    local moved=downAt and (input.Position-downAt).Magnitude>9 or dragging
-    dragInput,downAt,startAnchor=nil,nil,nil
+    local moved=dragging or
+        (downAt and (input.Position-downAt).Magnitude>9) or false
+    dragInput,downAt,startUDim,startAbsolute=nil,nil,nil,nil
     dragging=false
     if not moved and alive then doMacro() end
 end)
