@@ -1,4 +1,20 @@
 
+## Macro circular V3 FAST — botao maior e resposta mais rapida
+
+O usuario confirmou que o **macro circular V2 funcionou** no Delta/iPhone, mas o botao de 72 px era muito pequeno e o acionamento demorava demais. A V3 conserva os dois caminhos descobertos pelo X12, a alternancia iniciar/cancelar, a trava de posicao e o menu de setor. O arquivo V2 foi preservado sem alteracoes.
+
+**Botao:** diametro inicial de 124 px (~72% maior que os 72 px anteriores); engrenagem possui controle de tamanho `- / +` (100 a 160 px); cadeado continua travando o arrasto, sem desativar os toques.
+
+**Velocidade:** remove a espera fixa `task.wait(.10)` antes de acionar o setor; procura a abertura do menu a cada quadro renderizado (em vez de pausas de 35 ms); reduz o bloqueio entre toques de 550 ms para 120 ms; reduz o intervalo entre press/release no clique virtual de 55 ms para 16 ms. Isso diminui atrasos impostos pelo script, mas **nao elimina animacoes, processamento do jogo ou limites de frame/executor**.
+
+O primeiro toque aciona `PlayerGui/Mobile/Emote` e `PlayerGui/EmotesGui/MainGui/Sector6/ViewportFrame/button` quando o menu aparece; o segundo envia **somente** o comando de `PlayerGui/Mobile/Emote` para cancelar. Segue copiando logs pela engrenagem. Se a V3 apresentar incompatibilidade, use a V2 funcional guardada no mesmo repositorio.
+
+**Loader V3 sem cache:**
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-sensibilidade-memedash/main/MemeDashEmoteMacroCircularV3Fast.lua?nocache=" .. tostring(os.time()) .. tostring(math.random(100000,999999)), true))()
+```
+
 ## Macro circular de emote V2 - iniciar / cancelar com o mesmo botao
 
 Com base no relatorio do X12, os botoes visiveis estao em `PlayerGui/Mobile/Emote` e `PlayerGui/EmotesGui/MainGui/Sector6/ViewportFrame/button`. Esse macro circular guarda esses caminhos e busca as instancias atuais, sem depender das coordenadas especificas da gravacao.
