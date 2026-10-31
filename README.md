@@ -1,3 +1,19 @@
+
+## X12: identificar botoes de emote para futuro macro (read-only)
+
+O usuario quer um **unico botao** para abrir o menu de emotes mobile e selecionar um emote. Para evitar inventar caminhos de GUI, o X12 observa dois toques reais feitos pelo usuario usando a API oficial `PlayerGui:GetGuiObjectsAtPosition` (sem simular cliques nem alterar a UI nativa).
+
+**Uso:** execute somente o diagnostico X12, toque INICIAR, toque o botao ORIGINAL do menu de emotes do MemeDash, toque um emote da lista, e depois COPIAR. Envie o relatorio completo. Se a janela cobrir os botoes, pode arrasta-la pelo titulo. REFAZER recomeca a captura.
+
+O relatorio salva no momento do toque: hierarquia de GuiObject, possivel GuiButton pai, tipo, nome, texto, imagem Roblox asset, AbsolutePosition/Size e ScreenGui. Isso identifica candidatos, **nao revela a callback interna do botao nem garante que clicks possam ser simulados publicamente**. Botoes em CoreGui, UI 3D ou protecoes do jogo podem impedir a descoberta/automacao; nao prometer macro antes de analisar o resultado.
+
+**Loader X12 sem cache:**
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-sensibilidade-memedash/main/MemeDashX12EmoteButtonInspector.lua?nocache=" .. tostring(os.time()) .. tostring(math.random(100000,999999)), true))()
+```
+
+Nenhum X9/X10/X11 ou script de sensibilidade foi alterado ou apagado.
 ## V8.3: correcao da CAMERA invertida nos dois eixos
 
 O usuario esclareceu que a CAMERA (nao o corpo) estava invertida: dedo para a esquerda virava a camera a direita, dedo para cima virava a camera para baixo, e vice-versa. A V8.2 havia tentado corrigir erroneamente a orientacao do corpo com +180 graus.
