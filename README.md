@@ -1,4 +1,20 @@
 
+## Macro circular de emote V2 - iniciar / cancelar com o mesmo botao
+
+Com base no relatorio do X12, os botoes visiveis estao em `PlayerGui/Mobile/Emote` e `PlayerGui/EmotesGui/MainGui/Sector6/ViewportFrame/button`. Esse macro circular guarda esses caminhos e busca as instancias atuais, sem depender das coordenadas especificas da gravacao.
+
+**Comportamento solicitado:** toque 1 no circulo verde `🎭` abre o menu original (se ainda estiver fechado) e tenta clicar no emote do Setor 6; toque 2 no circulo vermelho `■` **apenas** tenta clicar em `Mobile/Emote` de novo, para cancelar o emote, sem tentar selecionar o setor. Depois volta a verde e repete. O estado alterna somente quando o acionamento retorna sem erro; isso nao comprova que a animacao foi realmente executada ou cancelada.
+
+**Posicionamento:** o pequeno cadeado `🔓` deixa o circulo arrastavel. `🔒` trava a posicao (toques continuam funcionando). Arrastar mais de 9 pixels nao executa o macro; um toque curto executa. A engrenagem `⚙` abre ajustes de setor 1-8 e o botao `COPIAR LOG`. O arquivo do macro anterior `MemeDashEmoteMacroOneTap.lua` permanece intacto.
+
+**Compatibilidade:** ainda NAO testado no Delta/iPhone. Os botoes do jogo podem exigir callbacks que nao sejam acionaveis por script. O macro tenta `firesignal` e, em caso de bloqueio, clique virtual por APIs que podem nao estar disponiveis no executor. Enviar `COPIAR LOG` em caso de problema. Nao altera camera, personagem, controles, servidores ou remotes. Sem garantia de banimento ou compatibilidade.
+
+**Loader V2 sem cache:**
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-sensibilidade-memedash/main/MemeDashEmoteMacroCircularV2.lua?nocache=" .. tostring(os.time()) .. tostring(math.random(100000,999999)), true))()
+```
+
 ## X12: identificar botoes de emote para futuro macro (read-only)
 
 O usuario quer um **unico botao** para abrir o menu de emotes mobile e selecionar um emote. Para evitar inventar caminhos de GUI, o X12 observa dois toques reais feitos pelo usuario usando a API oficial `PlayerGui:GetGuiObjectsAtPosition` (sem simular cliques nem alterar a UI nativa).
