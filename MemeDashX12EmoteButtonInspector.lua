@@ -261,6 +261,12 @@ local function pick(pos)
         if o:IsA("GuiButton") then best=o;break end
     end
     if not best then best=candidates[1] end
+    -- Freeze paths and GUI information NOW: clicking the emote may close
+    -- and destroy the menu before COPIAR is pressed.
+    local frozen={}
+    for index,obj in ipairs(candidates) do
+        frozen[#frozen+1]=describe(obj,index)
+    end
     return {
         x=pos.X,y=pos.Y,
         insetY=inset.Y,
@@ -271,6 +277,8 @@ local function pick(pos)
         errors=errors,
         candidates=candidates,
         selected=best,
+        bestPath=safePath(best),
+        frozen=frozen,
         timestamp=os.clock()-startedAt,
     }
 end
@@ -286,15 +294,16 @@ local function captureLines(title,cap)
     lines[#lines+1]="ObjectsAtPositionTotal="..tostring(cap.totalAtPosition)
     lines[#lines+1]="GameObjectsAtPosition="..tostring(cap.filteredHits)
     lines[#lines+1]="ActionableCandidateCount="..tostring(cap.interactiveCount)
-    lines[#lines+1]="BestCandidate="..safePath(cap.selected)
+    lines[#lines+1]="BestCandidate="..(cap.bestPath or "(none)")
+    lines[#lines+1]="InputGameProcessed="..tostring(cap.wasProcessed)
     lines[#lines+1]=string.format("Elapsed=%.3fs",cap.timestamp)
     for _,e in ipairs(cap.errors) do lines[#lines+1]="LookupError="..e end
     if #cap.candidates==0 then
         lines[#lines+1]="No PlayerGui objects found. Button may be CoreGui, 3D,"
         lines[#lines+1]="or GUI location may not match touch coordinates."
     end
-    for i,obj in ipairs(cap.candidates) do
-        lines[#lines+1]=describe(obj,i)
+    for _,entry in ipairs(cap.frozen or {}) do
+        lines[#lines+1]=entry
     end
     return lines
 end
