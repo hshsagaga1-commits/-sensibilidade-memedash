@@ -110,6 +110,32 @@ end
 ENV.__MemeDashX12Cleanup=cleanup
 connect(closeButton.Activated,cleanup)
 
+-- Drag the small inspector out of the way if it covers the emote menu.
+local dragging,dragInput,dragStart,frameStart=false,nil,nil,nil
+heading.Active=true
+connect(heading.InputBegan,function(input)
+    if input.UserInputType==Enum.UserInputType.Touch
+        or input.UserInputType==Enum.UserInputType.MouseButton1 then
+        dragging,dragInput,dragStart,frameStart=true,input,input.Position,panel.Position
+    end
+end)
+connect(UIS.InputChanged,function(input)
+    if not dragging or not dragInput then return end
+    if input==dragInput or
+        (dragInput.UserInputType==Enum.UserInputType.MouseButton1
+        and input.UserInputType==Enum.UserInputType.MouseMovement) then
+        local delta=input.Position-dragStart
+        panel.Position=UDim2.new(
+            frameStart.X.Scale,frameStart.X.Offset+delta.X,
+            frameStart.Y.Scale,frameStart.Y.Offset+delta.Y)
+    end
+end)
+connect(UIS.InputEnded,function(input)
+    if input==dragInput then
+        dragging,dragInput,dragStart,frameStart=false,nil,nil,nil
+    end
+end)
+
 local function screenPosition()
     local c=Workspace.CurrentCamera
     if c then
