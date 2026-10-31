@@ -1,3 +1,20 @@
+## V8.3: correcao da CAMERA invertida nos dois eixos
+
+O usuario esclareceu que a CAMERA (nao o corpo) estava invertida: dedo para a esquerda virava a camera a direita, dedo para cima virava a camera para baixo, e vice-versa. A V8.2 havia tentado corrigir erroneamente a orientacao do corpo com +180 graus.
+
+A V8.3 corrige isso **na entrada de toque**, com `invertX=true` e `invertY=true` por padrao. A UI mostra `X normal` e `Y normal` para essas configuracoes, por refletirem a experiencia do jogador. Preserva o multiplicador de sensibilidade de 0.1x a 2.0x e o controle horizontal CORPO ON, mantendo `reverseBodyTurn=false`. A opcao de giro do corpo em 180 graus continua disponivel, mas agora com `flipBodyFacing=false` por padrao (`FRENTE 0`).
+
+Se o sentido ficar errado, os botoes X/Y continuam permitindo alternar cada eixo independentemente. O codigo substitui temporariamente o controlador de camera original apenas quando ON e sensibilidade diferente de 1.0x, e tenta restaura-lo no OFF, 1.0x ou X. **Ainda nao foi testado dentro do jogo:** confirme se a camera segue o dedo e o corpo acompanha sem problemas de movimento. Se falhar, use OFF e reentre no jogo.
+
+**Loader V8.3 sem cache:**
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-sensibilidade-memedash/main/memedash_sensibilidade_v8_3_camera_natural.lua?nocache=" .. tostring(os.time()) .. tostring(math.random(100000,999999)), true))()
+```
+
+V8, V8.1 e V8.2 preservadas, sem alteracoes.
+
+---
 ## Conclusao dos diagnosticos X9 v2 e X10 V3
 
 O X9 v2 verificou que camera e corpo NEM SEMPRE acompanham a mesma rotacao: diferenca de ate 104,686 graus em uma sessao de 12 segundos (616/722 frames >5 graus), enquanto a camera foi Scriptable. Assim, nunca se deve presumir alinhamento 1:1 nem escrever em HumanoidRootPart.CFrame para ajustar a sensibilidade.
