@@ -29,8 +29,7 @@ for _,key in ipairs({
     "__MemeDashSensitivityV8Cleanup",
     "__MemeDashSensitivityV7Cleanup",
     "__MemeDashSensitivityV6Cleanup",
-    "__MemeDashCameraSensitivityCleanup",
-    "__MemeDashSensitivityV8Cleanup"
+    "__MemeDashCameraSensitivityCleanup"
 }) do
     if type(ENV[key])=="function" then pcall(ENV[key]) end
 end
