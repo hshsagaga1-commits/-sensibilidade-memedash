@@ -1,3 +1,24 @@
+# MemeDash — Emote Macro V4 Public
+
+**Release:** 2026-11-12. This is the new obfuscated public build. The working V2 and V3 files stay unchanged.
+
+**One-tap flow:** first tap dispatches the selected emote, second tap requests cancel. The script operates on the game's visible emote buttons and does not modify camera, character movement, or game remotes. Dispatch does not guarantee that the emote actually played.
+
+**Floating button:** pure RED (inactive / ready to start) or pure GREEN (start dispatched / ready to cancel). No emoji, label, gradient or outline. Drag the circle to move it; the separate lock control disables dragging without disabling taps.
+
+**Settings (gear):** choose emote sector 1–8, resize circle from 70 to 240 px in 10-px increments, and adjust transparency from 0% to 100% in 10% steps. Transparency affects **every** UI component, including the circular button, lock, gear, sector settings, logs, modal backgrounds, text, and outlines. At 100%, everything becomes invisible; running the loader again resets visibility to prevent accidental lockout.
+
+**Preferences:** sector, button size, opacity, lock state, and button position are kept in per-client memory and optionally in `MemeDashEmoteMacroV4.settings.json` if the executor exposes file APIs. No accounts, tokens, web telemetry, or external logging.
+
+**Public loader (no cache):**
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/hshsagaga1-commits/-sensibilidade-memedash/main/MemeDashEmoteMacroCircularV4Public.lua?nocache=" .. tostring(os.time()) .. tostring(math.random(100000,999999)), true))()
+```
+
+**Compatibility:** client-side Roblox / MemeDash, intended for Delta on iPhone. The V4 has been statically checked, but has **not** yet been validated in a live game session. Macro dispatch depends on executor input APIs (`firesignal` / virtual input). Obfuscation is reversible and is not a guarantee against copying or bans.
+
+---
 
 ## Macro circular V3 FAST — botao maior e resposta mais rapida
 
